@@ -58,9 +58,10 @@ end
 Simple.Ezreal = {
 	OnTick = function(target)
 		local Qrange, Qwidth, Qspeed, Qdelay = 1150, 80, 2000, 0.25
-		if target and (yayo.Config.AutoCarry or yayo.Config.Mixed or yayo.Config.LaneClear) then
-			if ValidTarget(target, Qrange) then
-				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, Qdelay, Qwidth, Qrange, Qspeed, myHero, true)
+		local targetQ = GetWeakEnemy("PHYS", 1150)
+		if targetQ and (yayo.Config.AutoCarry or yayo.Config.Mixed or yayo.Config.LaneClear) then
+			if ValidTarget(targetQ, 1150) then
+				local CastPosition, HitChance, Position = YP:GetLineCastPosition(targetQ, Qdelay, Qwidth, Qrange, Qspeed, myHero, true)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
 					CastSpellXYZ('Q', x, y, z)
@@ -167,6 +168,25 @@ Simple.Teemo = {
 		if target and (yayo.Config.AutoCarry or yayo.Config.Mixed) then
 			if ValidTarget(target, myHero.range) then
 				CastSpellTarget('Q', target)
+			end
+		end
+	end
+}
+
+Simple.MasterYi = {
+	OnTick = function(target)
+		local targetQ = GetWeakEnemy('PHYS', 600)
+		if targetQ and (yayo.Config.AutoCarry or yayo.Config.Mixed) then
+			CastSpellTarget('Q', targetQ)
+		end
+		if target and yayo.Config.AutoCarry then
+			CastSpellTarget('E', myHero)
+		end
+	end,
+	AfterAttack = function(target)
+		if target and yayo.Config.AutoCarry then
+			if ValidTarget(target, myHero.range) then
+				CastSpellTarget('W', myHero)
 			end
 		end
 	end
