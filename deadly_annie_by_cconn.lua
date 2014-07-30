@@ -1,4 +1,4 @@
---[[Deadly Annie V1.0b by CCONN based on Deadly Cassiopeia v1.6]]
+--[[Deadly Annie V1.1 by CCONN based on Deadly Cassiopeia v1.6]]
 require 'Utils'
 require 'spell_damage'
 require 'uiconfig'
@@ -162,6 +162,7 @@ menu.slider('Seraphs_Embrace_Value', 'Seraphs Embrace Value', 0, 100, 15, nil, t
 
 ----------[[Core Script Function]]
 function DeadlyAnnie()
+	SetScriptTimer(10)
 	if IsLolActive() and IsChatOpen() == 0 then
 		target = GetWeakEnemy('MAGIC', 625)
 		targetHero = GetWeakEnemy('MAGIC', 625)
