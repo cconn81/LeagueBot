@@ -83,6 +83,13 @@ Simple.Ezreal = {
 }
 
 Simple.Vayne = {
+	OnTick = function(target)
+    	if target ~= nil then
+			if WillHitWall(target,440) == 1 and (GetDistance(myHero, target) <= 550) then
+				CastSpellTarget("E", target)
+			end
+		end
+	end,
 	AfterAttack = function(target)
 		if yayo.Config.AutoCarry or yayo.Config.LaneClear then
 			CastSpellXYZ('Q', mousePos.x, mousePos.y, mousePos.z)
@@ -138,6 +145,28 @@ Simple.Tristana = {
 				if rdmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) < 550+9*(myHero.selflevel - 1) then
         		   	CastSpellTarget("R",enemy)
 				end
+			end
+		end
+	end
+}
+
+Simple.Teemo = {
+	OnTick = function(target)
+		local Rrange, Rwidth, Rspeed, Rdelay = 230, 60, math.huge, 0.1
+		if target and (yayo.Config.AutoCarry or yayo.Config.Mixed) then
+			if ValidTarget(target, Rrange) and myHero.SpellTimeR > 1.0 then
+				local CastPosition, HitChance, Position = YP:GetCircularCastPosition(target, Rdelay, Rwidth, Rrange, Rspeed, myHero, false)
+				if HitChance >= 2 then
+					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+					CastSpellXYZ('R', x, y, z)
+				end
+			end
+		end
+	end,
+	AfterAttack = function(target)
+		if target and (yayo.Config.AutoCarry or yayo.Config.Mixed) then
+			if ValidTarget(target, myHero.range) then
+				CastSpellTarget('Q', target)
 			end
 		end
 	end
