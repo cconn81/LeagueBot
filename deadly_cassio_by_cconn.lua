@@ -22,19 +22,8 @@
 ▐░█▄▄▄▄▄▄▄█░▌     ▐░▌          ▐░█▄▄▄▄▄▄▄▄▄ ▐░█▄▄▄▄▄▄▄▄▄ ▐░█▄▄▄▄▄▄▄█░▌▐░▌     ▐░▐░▌▐░▌     ▐░▐░▌                                                            
 ▐░░░░░░░░░░▌      ▐░▌          ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌      ▐░░▌▐░▌      ▐░░▌                                                            
  ▀▀▀▀▀▀▀▀▀▀        ▀            ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀        ▀▀  ▀        ▀▀                                                             
-                                                                                                                                                            
- ▄               ▄   ▄▄▄▄         ▄▄▄▄▄▄▄▄▄▄▄                                                                                                               
-▐░▌             ▐░▌▄█░░░░▌       ▐░░░░░░░░░░░▌                                                                                                              
- ▐░▌           ▐░▌▐░░▌▐░░▌       ▐░█▀▀▀▀▀▀▀█░▌                                                                                                              
-  ▐░▌         ▐░▌  ▀▀ ▐░░▌       ▐░▌       ▐░▌                                                                                                              
-   ▐░▌       ▐░▌      ▐░░▌       ▐░█▄▄▄▄▄▄▄█░▌                                                                                                              
-    ▐░▌     ▐░▌       ▐░░▌       ▐░░░░░░░░░░░▌                                                                                                              
-     ▐░▌   ▐░▌        ▐░░▌        ▀▀▀▀▀▀▀▀▀█░▌                                                                                                              
-      ▐░▌ ▐░▌         ▐░░▌                 ▐░▌                                                                                                              
-       ▐░▐░▌      ▄▄▄▄█░░█▄▄▄  ▄  ▄▄▄▄▄▄▄▄▄█░▌                                                                                                              
-        ▐░▌      ▐░░░░░░░░░░░▌▐░▌▐░░░░░░░░░░░▌                                                                                                              
-         ▀        ▀▀▀▀▀▀▀▀▀▀▀  ▀  ▀▀▀▀▀▀▀▀▀▀▀                                                                                                               
-                                                                                                                                                            
+                                                                                                                                                                                                                                                                       
+VERSION 2.0
                                                                                                                                                          
 		Follow me on Facebook! I post info on all new scripts and updates there
 		CCONN's Facebook: https://www.facebook.com/CCONN81
@@ -52,6 +41,7 @@ require 'spell_damage'
 require 'uiconfig'
 require 'winapi'
 require 'SKeys'
+require 'yprediction'
 
 ----------[[Deadly Cassio Variables]]
 local target
@@ -71,6 +61,10 @@ local True_Attack_Damage_Against_Minions = 0
 local Range = myHero.range + GetDistance(GetMinBBox(myHero))
 local UltPOS
 local SORT_CUSTOM = function(a, b) return a.maxHealth and b.maxHealth and a.maxHealth < b.maxHealth end
+local Qrange, Qwidth, Qspeed, Qdelay = 875, 80, math.huge, 0.535
+local Wrange, Wwidth, Wspeed, Wdelay = 875, 80, math.huge, 0.350
+local Rrange, Rwidth, Rspeed, Rdelay = 875, 350, math.huge, 0.535
+local YP = YPrediction()
 ----------[[End of Deadly Cassio Variables]]
 
 ----------[[Farming Variables]]
@@ -142,7 +136,7 @@ menu.keydown('Cast_Ult', 'Cast Ultimate', Keys.A)
 menu.label('lbl7', ' ')																				
 menu.label('lbl8', 'MEC Ultimate Options')															
 menu.checkbutton('useAutoMECR', 'use Auto MEC R', true)
-menu.slider('valMECR', 'Minimum MEC Value', 1, 5, 3, {1,2,3,4,5})
+menu.slider('valMECR', 'Minimum MEC Value', 1, 5, 2, {1,2,3,4,5})
 	menu.permashow('Combo')
 	menu.permashow('ComboR')
 	menu.permashow('Harass')
@@ -156,8 +150,8 @@ CfgSettings, menu = uiconfig.add_menu('2. Cassio Settings', 200)
 menu.checkbutton('Auto_Q_ONOFF', 'Auto Q', true)
 menu.checkbutton('Auto_W_ONOFF', 'Auto W', true)
 menu.checkbutton('Auto_E_ONOFF', 'Auto E', true)
-menu.checkbutton('Auto_Harass_ONOFF', 'Auto Harass', true)
-menu.checkbutton('Auto_Ult_ONOFF', 'Auto Ultimate', true)
+menu.checkbutton('Auto_Harass_ONOFF', 'Auto Harass', false)
+menu.checkbutton('Auto_Ult_ONOFF', 'Auto Ultimate', false)
 menu.checkbutton('Low_HP_Ult_ONOFF', 'Low HP Auto Ult', true)
 menu.checkbutton('DMG_Predict_Farm_ONOFF', 'Use Damage Prediction Farming', true)
 menu.checkbutton('Lane_Clear_With_W', 'Lane Clear with Miasma', true)
@@ -169,7 +163,7 @@ menu.checkbutton('RoamHelper_ONOFF', 'Roam Helper', true)
 menu.checkbutton('Combo_Circles_ONOFF', 'Combo Circles', true)
 menu.checkbutton('Draw_ONOFF', 'Range Circles', true)
 menu.checkbutton('MoveToMouse', 'Move To Mouse', true)
-menu.slider('ComboType', 'Choose Combo Type', 1, 3, 1, {"W First","Q First", "CCONN"})
+menu.slider('ComboType', 'Choose Combo Type', 1, 3, 2, {"W First","Q First", "CCONN"})
 menu.slider('RTYPE', 'Manual R Type', 1, 2, 1, {"No Facing Detection","Facing Detection"})
 menu.slider('QRNG', 'Q Range', 100, 850, 850, nil, true)
 menu.slider('WRNG', 'W Range', 100, 850, 850, nil, true)
@@ -234,6 +228,7 @@ menu.slider('Seraphs_Embrace_Value', 'Seraphs Embrace Value', 0, 100, 15, nil, t
 
 ----------[[Core Script Function]]
 function DeadlyCassio()
+	SetScriptTimer(10)
 	if IsChatOpen() == 0 and tostring(winapi.get_foreground_window()) == "League of Legends (TM) Client" then
 		target = GetWeakEnemy('MAGIC', 850)
 		targetHero = GetWeakEnemy('MAGIC', 850)
@@ -732,7 +727,12 @@ end
 function Q()
 	if target ~= nil then
 		if GetDistance(myHero, target) <= CfgSettings.QRNG and myHero.SpellTimeQ > 1.0 then
-				CastSpellXYZ("Q",GetFireahead(target,6,0))
+			CastPosition,  HitChance,  Position = YP:GetCircularCastPosition(target, Qdelay, Qwidth, Qrange, Qspeed, myHero, false)
+			if CastPosition and HitChance >= 2 then 
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z                
+				CastSpellXYZ('Q', x, y, z)
+			end
+				--CastSpellXYZ("Q",GetFireahead(target,6,0))
 				qTimer = os.time()
 		end
 	end
@@ -741,7 +741,12 @@ end
 function W()
 	if target ~= nil then
 		if GetDistance(myHero, target) <= CfgSettings.WRNG and myHero.SpellTimeW > 1.0 then
-			CastSpellXYZ("W",GetFireahead(target,2.65,42))  --2.65,45 need to test
+			CastPosition,  HitChance,  Position = YP:GetCircularCastPosition(target, Wdelay, Wwidth, Wrange, Wspeed, myHero, false)
+			if CastPosition and HitChance >= 2 then 
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z                
+				CastSpellXYZ('W', x, y, z)
+			end
+			--CastSpellXYZ("W",GetFireahead(target,2.65,42))  --2.65,45 need to test
 			wTimer = os.time()
 		end
 	end
