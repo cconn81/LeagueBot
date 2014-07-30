@@ -731,9 +731,8 @@ function Q()
 			if CastPosition and HitChance >= 2 then 
 				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z                
 				CastSpellXYZ('Q', x, y, z)
-			end
-				--CastSpellXYZ("Q",GetFireahead(target,6,0))
 				qTimer = os.time()
+			end
 		end
 	end
 end
@@ -745,9 +744,8 @@ function W()
 			if CastPosition and HitChance >= 2 then 
 				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z                
 				CastSpellXYZ('W', x, y, z)
+				wTimer = os.time()
 			end
-			--CastSpellXYZ("W",GetFireahead(target,2.65,42))  --2.65,45 need to test
-			wTimer = os.time()
 		end
 	end
 end
