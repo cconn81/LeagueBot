@@ -1,5 +1,5 @@
 --[[
-Version 1.03
+Version 1.4
 
 Changelog	Version 1.0
 				Initial release includes:
@@ -14,6 +14,8 @@ Changelog	Version 1.0
 				Added Master Yi Q,E Combo & W AA Reset
 			Version 1.3
 				Added Ahri E,Q,W combo
+			Version 1.4
+				Added Cassiopeia Q,W,E Combo with Poison Detection from Deadly Cassio
 ]]
 
 
@@ -241,6 +243,50 @@ Simple.Ahri = {
 		end
 	end,
 }
+
+Simple.Cassiopeia = {
+	OnTick = function(target)
+		local Qrange, Qwidth, Qspeed, Qdelay = 875, 80, math.huge, 0.535
+		local Wrange, Wwidth, Wspeed, Wdelay = 875, 80, math.huge, 0.350
+		local targetQ = GetWeakEnemy("MAGIC", 875)
+		local targetE = GetWeakEnemy("MAGIC", 700)
+		local targetW = GetWeakEnemy("MAGIC", 875)
+		if targetE and (yayo.Config.AutoCarry or yayo.Config.Mixed or yayo.Config.LaneClear) then
+			if ValidTarget(targetE, 700) and DetectPoison(targetE) then
+				CastSpellTarget('E', targetE)
+			end
+		end
+		if targetQ and (yayo.Config.AutoCarry or yayo.Config.Mixed or yayo.Config.LaneClear) then
+			if ValidTarget(targetQ, 875) then
+				local CastPosition, HitChance, Position = YP:GetLineCastPosition(targetQ, Qdelay, Qwidth, Qrange, Qspeed, myHero, false)
+				if HitChance >= 2 then
+					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+					CastSpellXYZ('Q', x, y, z)
+				end
+			end
+		end
+		if targetW and (yayo.Config.AutoCarry or yayo.Config.Mixed or yayo.Config.LaneClear) then
+			if ValidTarget(targetW, 875) then
+				local CastPosition, HitChance, Position = YP:GetLineCastPosition(targetW, Wdelay, Wwidth, Wrange, Wspeed, myHero, false)
+				if HitChance >= 2 then
+					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+					CastSpellXYZ('W', x, y, z)
+				end
+			end
+		end
+	end,
+}
+
+function DetectPoison(target)
+    for i = 1, objManager:GetMaxObjects(), 1 do
+        obj = objManager:GetObject(i)
+        if obj~=nil and target~=nil then
+            if (obj.charName:lower():find("global_poison")) and GetDistance(obj, target) < 100 then
+                return true
+            end
+        end
+    end
+end
 
 
 
