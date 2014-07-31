@@ -1,25 +1,30 @@
 --[[
-Version 1.6
+Version 1.7
 
-Changelog	Version 1.0
+Changelog	
+			Version 1.7
+				Added menu for Vayne
+				Added support for Samipot's Vayne Mighty Assistant
+				Added anti gap closer E options
+			Version 1.6
+				Added Ryze Combo from Deadly Ryze
+			Version 1.5
+				Added Riven Q,W,E Combo
+			Version 1.4
+				Added Cassiopeia Q,W,E Combo with Poison Detection from Deadly Cassio
+			Version 1.3
+				Added Ahri E,Q,W combo
+			Version 1.2
+				Added Master Yi Q,E Combo & W AA Reset
+			Version 1.1
+				Added Vayne wall condemn
+			Version 1.0
 				Initial release includes:
 					Ezreal Q Combo and W AA reset
 					Vayne Q AA Reset
 					Caitlyn Q,W Combo
 					Tristana Q,E Combo with E,R Kill Steal
 					Teemo - Doesn't work
-			Version 1.1
-				Added Vayne wall condemn
-			Version 1.2
-				Added Master Yi Q,E Combo & W AA Reset
-			Version 1.3
-				Added Ahri E,Q,W combo
-			Version 1.4
-				Added Cassiopeia Q,W,E Combo with Poison Detection from Deadly Cassio
-			Version 1.5
-				Added Riven Q,W,E Combo
-			Version 1.6
-				Added Ryze Combo from Deadly Ryze
 ]]
 
 
@@ -109,14 +114,20 @@ Simple.Ezreal = {
 
 Simple.Vayne = {
 	OnTick = function(target)
-    	if target ~= nil then
+    	if target ~= nil and CfgVayne.AutoCondemn then
 			if WillHitWall(target,440) == 1 and (GetDistance(myHero, target) <= 550) then
-				CastSpellTarget("E", target)
+				CastSpellTarget('E', target)
+			end
+		end
+		local targetSafe = GetWeakEnemy('PHYS', 550)
+		if targetSafe ~= nil and CfgVayne.AutoESafe then
+			if GetDistance(targetSafe) <= CfgVayne.AutoESafeZone then
+				CastSpellTarget('E', targetSafe)
 			end
 		end
 	end,
 	AfterAttack = function(target)
-		if yayo.Config.AutoCarry or yayo.Config.LaneClear then
+		if CfgVayne.AAQReset and (yayo.Config.AutoCarry or yayo.Config.LaneClear) then
 			CastSpellXYZ('Q', mousePos.x, mousePos.y, mousePos.z)
 		end
 	end
@@ -339,10 +350,23 @@ Simple.Ryze = {
 		end
 	end
 }
-
+---------------------------------------------------------------------------------------------------
+-- Menu Items -------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 if myHero.name == "Ryze" then
 	CfgRyze, menu = uiconfig.add_menu('Ryze Settings', 200)
 	menu.keytoggle('ComboR', 'R in Combo', Keys.Z, false)
+end
+if myHero.name == "Vayne" then
+	CfgVayne, menu = uiconfig.add_menu('Vayne Settings', 200)
+	menu.checkbutton('AAQReset', 'Reset AA with Q', true)
+	menu.checkbutton('AutoCondemn', 'Auto Condemn (LB API)', false)
+	menu.checkbutton('AutoCondemnVMA', 'Use Vayne Mighty Assistant', true)
+	menu.checkbutton('AutoESafe', 'Auto Condemn anti gap closer', true)
+	menu.slider('AutoESafeZone', 'Anti Gap Closer Distance', 0, 550, 150, nil, true)
+end
+if myHero.name == "Vayne" and CfgVayne.AutoCondemnVMA then
+	require "vayne_mighty_assistant"
 end
 
 Init()
