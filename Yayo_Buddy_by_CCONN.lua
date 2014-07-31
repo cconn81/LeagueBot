@@ -1,5 +1,5 @@
 --[[
-Version 1.4
+Version 1.5
 
 Changelog	Version 1.0
 				Initial release includes:
@@ -16,6 +16,8 @@ Changelog	Version 1.0
 				Added Ahri E,Q,W combo
 			Version 1.4
 				Added Cassiopeia Q,W,E Combo with Poison Detection from Deadly Cassio
+			Version 1.5
+				Added Riven Q,W,E Combo
 ]]
 
 
@@ -59,7 +61,7 @@ end
 function OnTick()
 	local target = yayo.GetTarget()
 	if ValidTarget(target) and yayo.Config.AutoCarry then
-		-- UseAllItems(target)
+		UseAllItems(target)
 	end
 	if Simple[myHero.name] and Simple[myHero.name].OnTick then
 		Simple[myHero.name].OnTick(target)
@@ -258,7 +260,7 @@ Simple.Cassiopeia = {
 		end
 		if targetQ and (yayo.Config.AutoCarry or yayo.Config.Mixed or yayo.Config.LaneClear) then
 			if ValidTarget(targetQ, 875) then
-				local CastPosition, HitChance, Position = YP:GetLineCastPosition(targetQ, Qdelay, Qwidth, Qrange, Qspeed, myHero, false)
+				local CastPosition, HitChance, Position = YP:GetCircularCastPosition(targetQ, Qdelay, Qwidth, Qrange, Qspeed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
 					CastSpellXYZ('Q', x, y, z)
@@ -267,7 +269,7 @@ Simple.Cassiopeia = {
 		end
 		if targetW and (yayo.Config.AutoCarry or yayo.Config.Mixed or yayo.Config.LaneClear) then
 			if ValidTarget(targetW, 875) then
-				local CastPosition, HitChance, Position = YP:GetLineCastPosition(targetW, Wdelay, Wwidth, Wrange, Wspeed, myHero, false)
+				local CastPosition, HitChance, Position = YP:GetCircularCastPosition(targetW, Wdelay, Wwidth, Wrange, Wspeed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
 					CastSpellXYZ('W', x, y, z)
@@ -287,6 +289,36 @@ function DetectPoison(target)
         end
     end
 end
+
+Simple.Riven = {
+	OnTick = function(target)
+		local targetQ = GetWeakEnemy("PHYS", 385)
+		if targetQ and (yayo.Config.AutoCarry or yayo.Config.Mixed) then
+			if ValidTarget(targetQ, 385) and GetDistance(targetQ) > 125 then
+				CastSpellXYZ('Q', mousePos.x, mousePos.y, mousePos.z)
+			end
+		end
+		local targetW = GetWeakEnemy("PHYS", 125)
+		if targetW and (yayo.Config.AutoCarry or yayo.Config.Mixed) then
+			if ValidTarget(targetW, 125) then
+				CastSpellTarget('W', myHero)
+			end
+		end
+		local targetE = GetWeakEnemy("PHYS", 325)
+		if targetE and (yayo.Config.AutoCarry or yayo.Config.Mixed) then
+			if ValidTarget(targetE, 325) then
+				CastSpellXYZ('E', mousePos.x, mousePos.y, mousePos.z)
+			end
+		end
+	end,
+	AfterAttack = function(target)
+		if target and yayo.Config.AutoCarry then
+			if ValidTarget(target, 260) then
+				CastSpellXYZ('Q', mousePos.x, mousePos.y, mousePos.z)
+			end
+		end
+	end
+}
 
 
 
