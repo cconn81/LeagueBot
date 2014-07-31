@@ -1,5 +1,22 @@
--- Simple yayo mini-scripts can be pasted at the end
--- * edited, not tested
+--[[
+Version 1.03
+
+Changelog	Version 1.0
+				Initial release includes:
+					Ezreal Q Combo and W AA reset
+					Vayne Q AA Reset
+					Caitlyn Q,W Combo
+					Tristana Q,E Combo with E,R Kill Steal
+					Teemo - Doesn't work
+			Version 1.1
+				Added Vayne wall condemn
+			Version 1.2
+				Added Master Yi Q,E Combo & W AA Reset
+			Version 1.3
+				Added Ahri E,Q,W combo
+]]
+
+
 require 'yprediction'
 require 'spell_damage'
 local yayo = require 'yayo'
@@ -190,6 +207,39 @@ Simple.MasterYi = {
 			end
 		end
 	end
+}
+
+Simple.Ahri = {
+	OnTick = function(target)
+		local Qrange, Qwidth, Qspeed, Qdelay = 950, 100, 1600, 0.25
+		local Erange, Ewidth, Espeed, Edelay = 975, 60, 1500, 0.25
+		local targetQ = GetWeakEnemy("MAGIC", 950)
+		local targetE = GetWeakEnemy("MAGIC", 975)
+		local targetW = GetWeakEnemy("MAGIC", 800)
+		if targetE and (yayo.Config.AutoCarry or yayo.Config.Mixed or yayo.Config.LaneClear) then
+			if ValidTarget(targetE, 975) then
+				local CastPosition, HitChance, Position = YP:GetLineCastPosition(targetE, Edelay, Ewidth, Erange, Espeed, myHero, true)
+				if HitChance >= 2 then
+					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+					CastSpellXYZ('E', x, y, z)
+				end
+			end
+		end
+		if targetQ and (yayo.Config.AutoCarry or yayo.Config.Mixed or yayo.Config.LaneClear) then
+			if ValidTarget(targetQ, 950) then
+				local CastPosition, HitChance, Position = YP:GetLineCastPosition(targetQ, Qdelay, Qwidth, Qrange, Qspeed, myHero, true)
+				if HitChance >= 2 then
+					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+					CastSpellXYZ('Q', x, y, z)
+				end
+			end
+		end
+		if targetW and (yayo.Config.AutoCarry or yayo.Config.Mixed or yayo.Config.LaneClear) then
+			if ValidTarget(targetW, 800) then
+				CastSpellTarget('W', myHero)
+			end
+		end
+	end,
 }
 
 
