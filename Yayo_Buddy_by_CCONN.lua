@@ -1,5 +1,5 @@
 --[[
-Version 1.5
+Version 1.6
 
 Changelog	Version 1.0
 				Initial release includes:
@@ -18,11 +18,14 @@ Changelog	Version 1.0
 				Added Cassiopeia Q,W,E Combo with Poison Detection from Deadly Cassio
 			Version 1.5
 				Added Riven Q,W,E Combo
+			Version 1.6
+				Added Ryze Combo from Deadly Ryze
 ]]
 
 
 require 'yprediction'
 require 'spell_damage'
+local uiconfig = require 'uiconfig'
 local yayo = require 'yayo'
 local YP = YPrediction()
 
@@ -320,7 +323,27 @@ Simple.Riven = {
 	end
 }
 
+Simple.Ryze = {
+	OnTick = function(target)
+		local target = GetWeakEnemy('Magic', 625)
+		if target and GetDistance(target) <= 600 then
+			if myHero.SpellTimeQ > 1.0 and GetDistance(myHero, target) <= 625 then
+				CastSpellTarget('Q', target)
+			elseif myHero.SpellTimeW > 1.0 and GetDistance(myHero, target) <= 600 then
+				CastSpellTarget('W', target)
+			elseif myHero.SpellTimeE > 1.0 and GetDistance(myHero, target) <= 600 then
+				CastSpellTarget('E', target)
+			elseif CfgRyze.ComboR and myHero.SpellTimeR > 1.0 and GetDistance(myHero, target) <= 600 then
+				CastSpellTarget('R', myHero)
+			end
+		end
+	end
+}
 
+if myHero.name == "Ryze" then
+	CfgRyze, menu = uiconfig.add_menu('Ryze Settings', 200)
+	menu.keytoggle('ComboR', 'R in Combo', Keys.Z, false)
+end
 
 Init()
 SetTimerCallback('OnTick')
