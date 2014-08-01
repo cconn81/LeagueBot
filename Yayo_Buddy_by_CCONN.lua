@@ -1,7 +1,12 @@
 --[[
-Version 1.9
+Version 2.0
 
 Changelog	
+			Version 2.0
+				Copmlete re-work of Tristana
+				Added new Tristana Menu
+				AP / AD toggle in menu and different combos / targets for each
+				Added kill steal section for Tristana
 			Version 1.9
 				Modified Caitlyn R damage calculation to correct spell damage library calculation
 			Version 1.8
@@ -42,17 +47,11 @@ Changelog
 	--Add Roam Helper
 	--Get Summoner Spells working
 	--Add custom draw ranges
+	--Add auto interrupt for dangerous spells for champions who can interrupt
 
 	--Ezreal
 		-- Add Kill Steals
 		-- Add spell cast functions like Caitlyn
-
-	--Tristana
-		-- Add Kill Steals Section
-		-- Add spell cast functions like Caitlyn
-		-- Add menu
-		-- Add AP / AD toggle
-		-- Kill Steal W with Safe Check
 
 	--Teemo
 		-- Fix everything, nothing works
@@ -81,6 +80,7 @@ Changelog
 		-- Add Safe E anti gap closer
 		-- Manual E
 		-- Manual Q
+		-- Champion collision check for ultimate
 
 	--Ryze
 		-- Add reduced range auto attack option from Deadly Ryze
@@ -728,31 +728,583 @@ end
 ---------------------------------------------------------------------------------------------------
 Simple.Tristana = {
 	OnTick = function(target)
-		if target and (yayo.Config.AutoCarry or yayo.Config.Mixed or yayo.Config.LaneClear) then
-			if ValidTarget(target, myHero.range) then
-				CastSpellTarget('Q', myHero)
-			end
-		end
-		if target and (yayo.Config.AutoCarry or yayo.Config.Mixed or yayo.Config.LaneClear) then
-			if ValidTarget(target, myHero.range) then
-				CastSpellTarget('E', target)
-			end
-		end
-		for i = 1, objManager:GetMaxHeroes()  do
-    		local enemy = objManager:GetHero(i)
-    		if (enemy ~= nil and enemy.team ~= myHero.team and enemy.visible == 1 and enemy.invulnerable==0 and enemy.dead == 0) then
-    			local edmg = getDmg("E",enemy,myHero)
-				local rdmg = getDmg("R",enemy,myHero)
-        		if edmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) < 550+9*(myHero.selflevel - 1) then
-        		   	CastSpellTarget("E",enemy)
+	local Qrange = myHero.range
+	local Wrange = CfgYayoBuddy._SpellRanges.wRNG
+	local Erange = myHero.range
+	local Rrange = myHero.range
+	local targetQ = GetWeakEnemy('PHYS', myHero.range)
+	local targetW = GetWeakEnemy('PHYS', CfgYayoBuddy._SpellRanges.wRNG)
+	local targetE = GetWeakEnemy('PHYS', myHero.range)
+	local targetR = GetWeakEnemy('PHYS', myHero.range)
+	local targetAP = GetWeakEnemy('MAGIC', CfgYayoBuddy._SpellRanges.wRNG)
+-------------------------------------------------
+-- Yayo Auto Carry State ------------------------
+-------------------------------------------------		
+		if yayo.Config.AutoCarry then
+-------------------------------------------------
+-- AD Tristana Combo ----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.TristMode == 1 then
+				if targetQ and CfgYayoBuddy._AutoCarry.useQ then
+					if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+						Tristana_Q(targetQ)
+					end
 				end
-				if rdmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) < 550+9*(myHero.selflevel - 1) then
-        		   	CastSpellTarget("R",enemy)
+				if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(targetW) then
+					if targetW and CfgYayoBuddy._AutoCarry.useW then
+						if ValidTarget(targetW, Wrange) then
+							Tristana_W(targetW)
+						end
+					end
+				else
+					if targetW and CfgYayoBuddy._AutoCarry.useW then
+						if ValidTarget(targetW, Wrange) then
+							Tristana_W(targetW)
+						end
+					end
+				end
+				if targetE and CfgYayoBuddy._AutoCarry.useE then
+					if ValidTarget(targetE, Erange) then
+						Tristana_E(targetE)
+					end
+				end
+				if targetR and CfgYayoBuddy._AutoCarry.useR then
+					if ValidTarget(targetR, Rrange) then
+						Caitlyn_R(targetR)
+					end
+				end
+-------------------------------------------------
+-- AP Tristana Combo ----------------------------
+-------------------------------------------------
+			elseif CfgYayoBuddy.TristMode == 2 then
+				if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(targetAP) then
+					if targetAP and CfgYayoBuddy._AutoCarry.useW then
+						if ValidTarget(targetAP, Wrange) and GetDistance(targetAP) <= Wrange then
+							Tristana_W(targetAP)
+						end
+					end
+				else
+					if targetAP and CfgYayoBuddy._AutoCarry.useW then
+						if ValidTarget(targetAP, Wrange) and GetDistance(targetAP) <= Wrange then
+							Tristana_W(targetAP)
+						end
+					end
+				end
+				if targetAP and CfgYayoBuddy._AutoCarry.useE then
+					if ValidTarget(targetAP, Erange) then
+						Tristana_E(targetAP)
+					end
+				end
+				if targetAP and CfgYayoBuddy._AutoCarry.useR then
+					if ValidTarget(targetAP, Rrange) then
+						Tristana_R(targetAP)
+					end
+				end
+				if targetAP and CfgYayoBuddy._AutoCarry.useR then
+					if ValidTarget(targetR, Rrange) then
+						Tristana_R(targetAP)
+					end
+				end
+				if targetAP and CfgYayoBuddy._AutoCarry.useQ then
+					if ValidTarget(targetAP, Qrange) and GetDistance(targetAP) <= Qrange then
+						Tristana_Q(targetAP)
+					end
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Mixed Mode State ------------------------
+-------------------------------------------------
+		if yayo.Config.Mixed then
+			-------------------------------------------------
+-- AD Tristana Combo ----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.TristMode == 1 then
+				if targetQ and CfgYayoBuddy._MixedMode.useQ then
+					if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+						Tristana_Q(targetQ)
+					end
+				end
+				if YayoBuddy.RocketJumpOptions.SafeW and SafeW(targetW) then
+					if targetW and CfgYayoBuddy._MixedMode.useW then
+						if ValidTarget(targetW, Wrange) then
+							Tristana_W(targetW)
+						end
+					end
+				else
+					if targetW and CfgYayoBuddy._MixedMode.useW then
+						if ValidTarget(targetW, Wrange) then
+							Tristana_W(targetW)
+						end
+					end
+				end
+				if targetE and CfgYayoBuddy._MixedMode.useE then
+					if ValidTarget(targetE, Erange) then
+						Tristana_E(targetE)
+					end
+				end
+				if targetR and CfgYayoBuddy._MixedMode.useR then
+					if ValidTarget(targetR, Rrange) then
+						Caitlyn_R(targetR)
+					end
+				end
+-------------------------------------------------
+-- AP Tristana Combo ----------------------------
+-------------------------------------------------
+			elseif CfgYayoBuddy.TristMode == 2 then
+				if YayoBuddy.RocketJumpOptions.SafeW and SafeW(targetAP) then
+					if targetAP and CfgYayoBuddy._MixedMode.useW then
+						if ValidTarget(targetAP, Wrange) and GetDistance(targetAP) <= Wrange then
+							Tristana_W(targetAP)
+						end
+					end
+				else
+					if targetAP and CfgYayoBuddy._MixedMode.useW then
+						if ValidTarget(targetAP, Wrange) and GetDistance(targetAP) <= Wrange then
+							Tristana_W(targetAP)
+						end
+					end
+				end
+				if targetAP and CfgYayoBuddy._MixedMode.useE then
+					if ValidTarget(targetAP, Erange) then
+						Tristana_E(targetAP)
+					end
+				end
+				if targetAP and CfgYayoBuddy._MixedMode.useR then
+					if ValidTarget(targetAP, Rrange) then
+						Tristana_R(targetAP)
+					end
+				end
+				if targetAP and CfgYayoBuddy._MixedMode.useR then
+					if ValidTarget(targetR, Rrange) then
+						Tristana_R(targetAP)
+					end
+				end
+				if targetAP and CfgYayoBuddy._MixedMode.useQ then
+					if ValidTarget(targetAP, Qrange) and GetDistance(targetAP) <= Qrange then
+						Tristana_Q(targetAP)
+					end
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Last Hit State --------------------------
+-------------------------------------------------
+		if yayo.Config.LastHit then
+			-------------------------------------------------
+-- AD Tristana Combo ----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.TristMode == 1 then
+				if targetQ and CfgYayoBuddy._LastHit.useQ then
+					if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+						Tristana_Q(targetQ)
+					end
+				end
+				if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(targetW) then
+					if targetW and CfgYayoBuddy._LastHit.useW then
+						if ValidTarget(targetW, Wrange) then
+							Tristana_W(targetW)
+						end
+					end
+				else
+					if targetW and CfgYayoBuddy._LastHit.useW then
+						if ValidTarget(targetW, Wrange) then
+							Tristana_W(targetW)
+						end
+					end
+				end
+				if targetE and CfgYayoBuddy._LastHit.useE then
+					if ValidTarget(targetE, Erange) then
+						Tristana_E(targetE)
+					end
+				end
+				if targetR and CfgYayoBuddy._LastHit.useR then
+					if ValidTarget(targetR, Rrange) then
+						Caitlyn_R(targetR)
+					end
+				end
+-------------------------------------------------
+-- AP Tristana Combo ----------------------------
+-------------------------------------------------
+			elseif CfgYayoBuddy.TristMode == 2 then
+				if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(targetAP) then
+					if targetAP and CfgYayoBuddy._LastHit.useW then
+						if ValidTarget(targetAP, Wrange) and GetDistance(targetAP) <= Wrange then
+							Tristana_W(targetAP)
+						end
+					end
+				else
+					if targetAP and CfgYayoBuddy._LastHit.useW then
+						if ValidTarget(targetAP, Wrange) and GetDistance(targetAP) <= Wrange then
+							Tristana_W(targetAP)
+						end
+					end
+				end
+				if targetAP and CfgYayoBuddy._LastHit.useE then
+					if ValidTarget(targetAP, Erange) then
+						Tristana_E(targetAP)
+					end
+				end
+				if targetAP and CfgYayoBuddy._LastHit.useR then
+					if ValidTarget(targetAP, Rrange) then
+						Tristana_R(targetAP)
+					end
+				end
+				if targetAP and CfgYayoBuddy._LastHit.useR then
+					if ValidTarget(targetR, Rrange) then
+						Tristana_R(targetAP)
+					end
+				end
+				if targetAP and CfgYayoBuddy._LastHit.useQ then
+					if ValidTarget(targetAP, Qrange) and GetDistance(targetAP) <= Qrange then
+						Tristana_Q(targetAP)
+					end
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Lane Clear State ------------------------
+-------------------------------------------------
+		if yayo.Config.LaneClear then
+			-------------------------------------------------
+-- AD Tristana Combo ----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.TristMode == 1 then
+				if targetQ and CfgYayoBuddy._LaneClear.useQ then
+					if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+						Tristana_Q(targetQ)
+					end
+				end
+				if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(targetW) then
+					if targetW and CfgYayoBuddy._LaneClear.useW then
+						if ValidTarget(targetW, Wrange) then
+							Tristana_W(targetW)
+						end
+					end
+				else
+					if targetW and CfgYayoBuddy._LaneClear.useW then
+						if ValidTarget(targetW, Wrange) then
+							Tristana_W(targetW)
+						end
+					end
+				end
+				if targetE and CfgYayoBuddy._LaneClear.useE then
+					if ValidTarget(targetE, Erange) then
+						Tristana_E(targetE)
+					end
+				end
+				if targetR and CfgYayoBuddy._LaneClear.useR then
+					if ValidTarget(targetR, Rrange) then
+						Caitlyn_R(targetR)
+					end
+				end
+-------------------------------------------------
+-- AP Tristana Combo ----------------------------
+-------------------------------------------------
+			elseif CfgYayoBuddy.TristMode == 2 then
+				if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(targetAP) then
+					if targetAP and CfgYayoBuddy._LaneClear.useW then
+						if ValidTarget(targetAP, Wrange) and GetDistance(targetAP) <= Wrange then
+							Tristana_W(targetAP)
+						end
+					end
+				else
+					if targetAP and CfgYayoBuddy._LaneClear.useW then
+						if ValidTarget(targetAP, Wrange) and GetDistance(targetAP) <= Wrange then
+							Tristana_W(targetAP)
+						end
+					end
+				end
+				if targetAP and CfgYayoBuddy._LaneClear.useE then
+					if ValidTarget(targetAP, Erange) then
+						Tristana_E(targetAP)
+					end
+				end
+				if targetAP and CfgYayoBuddy._LaneClear.useR then
+					if ValidTarget(targetAP, Rrange) then
+						Tristana_R(targetAP)
+					end
+				end
+				if targetAP and CfgYayoBuddy._LaneClear.useR then
+					if ValidTarget(targetR, Rrange) then
+						Tristana_R(targetAP)
+					end
+				end
+				if targetAP and CfgYayoBuddy._LaneClear.useQ then
+					if ValidTarget(targetAP, Qrange) and GetDistance(targetAP) <= Qrange then
+						Tristana_Q(targetAP)
+					end
+				end
+			end
+		end
+		if CfgYayoBuddy.KillSteal.KillSteal then TristanaKillSteal() end
+	end
+}
+
+-------------------------------------------------
+-- Tristana Spell Functions ---------------------
+-------------------------------------------------
+function Tristana_Q(QTarget)
+	local Qrange = myHero.range
+	if QTarget ~= nil then
+		if GetDistance(myHero, QTarget) <= Qrange then
+			CastSpellTarget('Q', myHero)
+		end
+	end
+end
+
+function Tristana_W(WTarget)
+	local Wrange, Wwidth, Wspeed, Wdelay = CfgYayoBuddy._SpellRanges.wRNG, 270, 1150, 0.5
+	if WTarget ~= nil then
+		if GetDistance(myHero, WTarget) <= Wrange and myHero.mana >= 60 then
+			local CastPosition, HitChance, Position = YP:GetCircularCastPosition(WTarget, Wdelay, Wwidth, Wrange, Wspeed, myHero, false)
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('W', x, y, z)
+			end
+		end
+	end
+end
+
+function Tristana_E(ETarget)
+	local Erange = myHero.range
+	if ETarget ~= nil then
+		if GetDistance(myHero, ETarget) <= Erange and myHero.mana >= 40+(myHero.selflevel * 10) then
+			if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW() then
+				CastSpellTarget('E', ETarget)
+			else
+				CastSpellTarget('E', ETarget)
+			end
+		end
+	end
+end
+
+function Tristana_R(RTarget)
+	Rrange = myHero.range
+	if RTarget ~= nil then
+		if GetDistance(myHero, RTarget) <= Rrange and myHero.mana >= 100 then
+			CastSpellTarget('R',RTarget)
+		end
+	end
+end
+
+-------------------------------------------------
+-- Safe E Related -------------------------------
+-------------------------------------------------
+function SafeW(target)
+	if CountUnit(target,CfgYayoBuddy.RocketJumpOptions.SafeW_Value) < 1 then
+		return true
+	else
+		return false
+	end
+end
+
+-------------------------------------------------
+--KILL STEAL FUNCTIONS---------------------------
+-------------------------------------------------
+function TristanaKillSteal() --15 KS Combinations
+	for i = 1, objManager:GetMaxHeroes()  do
+    	local enemy = objManager:GetHero(i)
+    	if (enemy ~= nil and enemy.team ~= myHero.team and enemy.visible == 1 and enemy.invulnerable == 0 and enemy.dead == 0) then
+			local qdmg = getDmg("Q",enemy,myHero)
+			local wdmg = getDmg("W",enemy,myHero)
+    		local edmg = getDmg("E",enemy,myHero)
+			local rdmg = getDmg("R",enemy,myHero)
+			local ignitedmg = (myHero.selflevel*20)+50
+-------------------------------------------------
+-- W KillSteal ----------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(enemy) then
+				if CfgYayoBuddy.KillSteal.W and wdmg > enemy.health and myHero.SpellTimeW > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W with SafeW KS
+					Tristana_W(enemy)
+				else
+					if CfgYayoBuddy.KillSteal.W and wdmg > enemy.health and myHero.SpellTimeW > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W without SafeW KS
+						Tristana_W(enemy)
+					end
+				end
+			end
+-------------------------------------------------
+-- E KillSteal ----------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.E and edmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= myHero.range then --E KS
+				Tristana_E(enemy)
+			end
+-------------------------------------------------
+-- R KillSteal ----------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.R and rdmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= myHero.range then --R KS
+				Tristana_R(enemy)
+			end
+-------------------------------------------------
+-- Ignite KillSteal -----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Ignite and ignitedmg > enemy.health and GetDistance(myHero,enemy) <= 600 then --Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+				end
+			end
+-------------------------------------------------
+-- W + E KillSteal ------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(enemy) then
+				if CfgYayoBuddy.KillSteal.WE and wdmg + edmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,E with SafeW KS
+					Tristana_W(enemy)
+					Tristana_E(enemy)
+				end
+			else
+				if CfgYayoBuddy.KillSteal.WE and wdmg + edmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,E without SafeW KS
+					Tristana_W(enemy)
+					Tristana_E(enemy)
+				end
+			end
+-------------------------------------------------
+-- W + R KillSteal ------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(enemy) then
+				if CfgYayoBuddy.KillSteal.WR and wdmg + rdmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,R with SafeW KS
+					Tristana_W(enemy)
+					Tristana_R(enemy)
+				end
+			else
+				if CfgYayoBuddy.KillSteal.WR and wdmg + rdmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,R without SafeW KS
+					Tristana_W(enemy)
+					Tristana_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- W + Ignite KillSteal -------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(enemy) then
+				if CfgYayoBuddy.KillSteal.WIgnite and wdmg + ignitedmg > enemy.health and myHero.SpellTimeW > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,Ignite with SafeW KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						Tristana_W(enemy)
+						SummonerIgnite(enemy)
+					end
+				end
+			else
+				if CfgYayoBuddy.KillSteal.WIgnite and wdmg + ignitedmg > enemy.health and myHero.SpellTimeW > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,Ignite without SafeW KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						Tristana_W(enemy)
+						SummonerIgnite(enemy)
+					end
+				end
+			end
+-------------------------------------------------
+-- E + R KillSteal ------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.ER and edmg + rdmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= myHero.range then --E,R KS
+				Tristana_E(enemy)
+				Tristana_R(enemy)
+			end
+-------------------------------------------------
+-- E + Ignite KillSteal -------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.EIgnite and edmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Tristana_E(enemy)
+				end
+			end
+-------------------------------------------------
+-- R + Ignite KillSteal -------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.RIgnite and rdmg + ignitedmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Tristana_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- W + E + R KillSteal --------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(enemy) then
+				if CfgYayoBuddy.KillSteal.WER and wdmg + edmg + rdmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,E,R with SafeW KS
+					Tristana_W(enemy)
+					Tristana_E(enemy)
+					Tristana_R(enemy)
+				end
+			else
+				if CfgYayoBuddy.KillSteal.WER and wdmg + edmg + rdmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,E,R without SafeW KS
+					Tristana_W(enemy)
+					Tristana_E(enemy)
+					Tristana_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- W + E + Ignite KillSteal ---------------------
+-------------------------------------------------
+			if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(enemy) then
+				if CfgYayoBuddy.KillSteal.WEIgnite and wdmg + edmg + ignitedmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,E,Ignite with SafeW KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						Tristana_W(enemy)
+						Tristana_E(enemy)
+						SummonerIgnite(enemy)
+					end
+				end
+			else
+				if CfgYayoBuddy.KillSteal.WEIgnite and wdmg + edmg + ignitedmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,E,Ignite without SafeW KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						Tristana_W(enemy)
+						Tristana_E(enemy)
+						SummonerIgnite(enemy)
+					end
+				end
+			end
+-------------------------------------------------
+-- W + R + Ignite KillSteal ---------------------
+-------------------------------------------------
+			if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(enemy) then
+				if CfgYayoBuddy.KillSteal.WRIgnite and wdmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,R,Ignite with SafeW KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						Tristana_W(enemy)
+						SummonerIgnite(enemy)
+						Tristana_R(enemy)
+					end
+				end
+			else
+				if CfgYayoBuddy.KillSteal.WRIgnite and wdmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,R,Ignite without SafeW KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						Tristana_W(enemy)
+						SummonerIgnite(enemy)
+						Tristana_R(enemy)
+					end
+				end
+			end
+-------------------------------------------------
+-- E + R + Ignite KillSteal ---------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.ERIgnite and edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Tristana_E(enemy)
+					Tristana_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- W + E + R + Ignite KillSteal -----------------
+-------------------------------------------------
+			if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(enemy) then
+				if CfgYayoBuddy.KillSteal.WERIgnite and wdmg + edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,E,R,Ignite KS --SafeW
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						Tristana_W(enemy)
+						SummonerIgnite(enemy)
+						Tristana_E(enemy)
+						Tristana_R(enemy)
+					end
+				end
+			else
+				if CfgYayoBuddy.KillSteal.WERIgnite and wdmg + edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= CfgYayoBuddy._SpellRanges.wRNG then --W,E,R,Ignite KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						Tristana_W(enemy)
+						SummonerIgnite(enemy)
+						Tristana_E(enemy)
+						Tristana_R(enemy)
+					end
 				end
 			end
 		end
 	end
-}
+end
 
 ---------------------------------------------------------------------------------------------------
 -- Teemo Section ----------------------------------------------------------------------------------
@@ -1259,6 +1811,57 @@ if myHero.name == "Caitlyn" then
 	submenu.checkbutton('QRIgnite', 'Q + R + Ignite', true)
 	submenu.checkbutton('ERIgnite', 'E + R + Ignite', true)
 	submenu.checkbutton('QERIgnite', 'Q + E + R + Ignite', true)
+end
+-------------------------------------------------
+-- Tristana Sub Menus ----------------------------
+-------------------------------------------------
+if myHero.name == "Tristana" then
+	local submenu = menu.submenu('_AutoCarry')
+	submenu.checkbutton('useQ', 'Q: Rapid Fire', true)
+	submenu.checkbutton('useW', 'W: Rocket Jump', false)
+	submenu.checkbutton('useE', 'E: Explosive Shot', true)
+	submenu.keytoggle('useR', 'R: Buster Shot', Keys.Z, false)
+	local submenu = menu.submenu('_LastHit')
+	submenu.checkbutton('useQ', 'Q: Rapid Fire', true)
+	submenu.checkbutton('useW', 'W: Rocket Jump', false)
+	submenu.checkbutton('useE', 'E: Explosive Shot', true)
+	submenu.checkbutton('useR', 'R: Buster Shot', false)
+	local submenu = menu.submenu('_MixedMode')
+	submenu.checkbutton('useQ', 'Q: Rapid Fire', true)
+	submenu.checkbutton('useW', 'W: Rocket Jump', false)
+	submenu.checkbutton('useE', 'E: Explosive Shot', true)
+	submenu.checkbutton('useR', 'R: Buster Shot', false)
+	local submenu = menu.submenu('_LaneClear')
+	submenu.checkbutton('useQ', 'Q: Rapid Fire', true)
+	submenu.checkbutton('useW', 'W: Rocket Jump', false)
+	submenu.checkbutton('useE', 'E: Explosive Shot', true)
+	submenu.checkbutton('useR', 'R: Buster Shot', false)
+	local submenu = menu.submenu('_SpellRanges')
+	--submenu.slider('qRNG', 'Q: Rapid Fire', 0, 703, 703, nil, true)
+	submenu.slider('wRNG', 'W: Rocket Jump', 0, 900, 900, nil, true)
+	--submenu.slider('eRNG', 'E: Explosive Shot', 0, 703, 703, nil, true)
+	--submenu.slider('rRNG', 'R: Buster Shot', 0, 703, 703, nil, true)
+	local submenu = menu.submenu('RocketJumpOptions')
+	submenu.checkbutton('SafeW', 'Use Safe Rocket Jump')
+	submenu.slider('SafeW_Value', 'Safe Zone Range', 0, 2000, 700, nil, true)
+	local submenu = menu.submenu('KillSteal')
+	submenu.checkbutton('KillSteal', 'Use Killsteals', true)
+	submenu.checkbutton('W', 'W', true)
+	submenu.checkbutton('E', 'E', true)
+	submenu.checkbutton('R', 'R', true)
+	submenu.checkbutton('Ignite', 'Ignite', true)
+	submenu.checkbutton('WE', 'W + E', true)
+	submenu.checkbutton('WR', 'W + R', true)
+	submenu.checkbutton('WIgnite', 'W + Ignite', true)
+	submenu.checkbutton('ER', 'E + R', true)
+	submenu.checkbutton('EIgnite', 'E + Ignite', true)
+	submenu.checkbutton('RIgnite', 'R + Ignite', true)
+	submenu.checkbutton('WER', 'W + E + R', true)
+	submenu.checkbutton('WEIgnite', 'W + E + Ignite', true)
+	submenu.checkbutton('WRIgnite', 'W + R + Ignite', true)
+	submenu.checkbutton('ERIgnite', 'E + R + Ignite', true)
+	submenu.checkbutton('WERIgnite', 'W + E + R + Ignite', true)
+	menu.slider('TristMode', 'Choose AD or AP', 1, 2, 1, {"AD","AP"})
 end
 -------------------------------------------------
 -- Vayne Sub Menus ------------------------------
