@@ -48,6 +48,7 @@ Changelog
 	--Get Summoner Spells working
 	--Add custom draw ranges
 	--Add auto interrupt for dangerous spells for champions who can interrupt
+	--Add Mana Manager - set mana threshold for each spell in each Yayo state
 
 	--Ezreal
 		-- Add Kill Steals
@@ -85,6 +86,12 @@ Changelog
 	--Ryze
 		-- Add reduced range auto attack option from Deadly Ryze
 		-- Add snare combo
+	--Vayne
+		-- Auto Interrupt spells with condemn
+		-- More detailed anti gap closer with menu options to select which champions to repel
+	--Tristana
+		-- Auto interrupt spells with condemn
+		--Anti gap closer like Vayne - menu to select who to repel
 
 ---------------------------------------------------------------------------------------------------
 -- Required Libs ----------------------------------------------------------------------------------
@@ -816,7 +823,7 @@ Simple.Tristana = {
 -- Yayo Mixed Mode State ------------------------
 -------------------------------------------------
 		if yayo.Config.Mixed then
-			-------------------------------------------------
+-------------------------------------------------
 -- AD Tristana Combo ----------------------------
 -------------------------------------------------
 			if CfgYayoBuddy.TristMode == 1 then
@@ -825,7 +832,7 @@ Simple.Tristana = {
 						Tristana_Q(targetQ)
 					end
 				end
-				if YayoBuddy.RocketJumpOptions.SafeW and SafeW(targetW) then
+				if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(targetW) then
 					if targetW and CfgYayoBuddy._MixedMode.useW then
 						if ValidTarget(targetW, Wrange) then
 							Tristana_W(targetW)
