@@ -1,7 +1,9 @@
 --[[
-Version 1.8
+Version 1.9
 
 Changelog	
+			Version 1.9
+				Modified Caitlyn R damage calculation to correct spell damage library calculation
 			Version 1.8
 				Yayo Buddy menu changes
 				Added Auto Potions from my Deadly Scripts
@@ -39,6 +41,7 @@ Changelog
 	--Add Dodge Skillshots
 	--Add Roam Helper
 	--Get Summoner Spells working
+	--Add custom draw ranges
 
 	--Ezreal
 		-- Add Kill Steals
@@ -78,6 +81,10 @@ Changelog
 		-- Add Safe E anti gap closer
 		-- Manual E
 		-- Manual Q
+
+	--Ryze
+		-- Add reduced range auto attack option from Deadly Ryze
+		-- Add snare combo
 
 ---------------------------------------------------------------------------------------------------
 -- Required Libs ----------------------------------------------------------------------------------
@@ -206,9 +213,9 @@ Simple.Ezreal = {
 				CastSpellXYZ('R', x, y, z)
 			end
 		end
-	---------------------------------------------
-	-- Yayo Last Hit State ----------------------
-	---------------------------------------------
+------------------------------------------------
+-- Yayo Last Hit State -------------------------
+------------------------------------------------
 		if yayo.Config.LastHit then
 			if CfgYayoBuddy._LastHit.useQ and targetQ and ValidTarget(targetQ, Qrange) then
 				local CastPosition, HitChance, Position = YP:GetLineCastPosition(targetQ, Qdelay, Qwidth, Qrange, Qspeed, myHero, true)
@@ -492,7 +499,7 @@ function CaitlynKillSteal() --15 KS Combinations
 			local qdmg = getDmg("Q",enemy,myHero)
 			local wdmg = getDmg("W",enemy,myHero)
     		local edmg = getDmg("E",enemy,myHero)
-			local rdmg = getDmg("R",enemy,myHero)-47
+			local rdmg = getDmg("R",enemy,myHero)-((47+(myHero.selflevel * 3))*2)
 			local ignitedmg = (myHero.selflevel*20)+50
 			if CfgYayoBuddy.KillSteal.Q and qdmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 1300 then --Q KS
 				Caitlyn_Q(enemy)
