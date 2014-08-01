@@ -49,6 +49,7 @@ Changelog
 		-- Add spell cast functions like Caitlyn
 		-- Add menu
 		-- Add AP / AD toggle
+		-- Kill Steal W with Safe Check
 
 	--Teemo
 		-- Fix everything, nothing works
@@ -75,6 +76,8 @@ Changelog
 
 	--Caitlyn
 		-- Add Safe E anti gap closer
+		-- Manual E
+		-- Manual Q
 
 ---------------------------------------------------------------------------------------------------
 -- Required Libs ----------------------------------------------------------------------------------
@@ -1224,10 +1227,10 @@ if myHero.name == "Caitlyn" then
 	submenu.checkbutton('useE', 'E: 90 Caliber Net', true)
 	submenu.checkbutton('useR', 'R: Ace in the Hole', false)
 	local submenu = menu.submenu('_SpellRanges')
-	submenu.slider('qRNG', 'Q: Piltover Peacemaker', 0, 1150, 1150, nil, true)
-	submenu.slider('qMINRNG', 'Q: Minimum Range', 0, 1150, 550, nil, true)
-	submenu.slider('wRNG', 'W: Yordle Snap Trap', 0, 1000, 1000, nil, true)
-	submenu.slider('eRNG', 'E: Arcane Shift', 0, 475, 475, nil, true)
+	submenu.slider('qRNG', 'Q: Piltover Peacemaker', 0, 1300, 1000, nil, true)
+	submenu.slider('qMINRNG', 'Q: Minimum Range', 0, 1300, 550, nil, true)
+	submenu.slider('wRNG', 'W: Yordle Snap Trap', 0, 800, 800, nil, true)
+	submenu.slider('eRNG', 'E: 90 Caliber Net', 0, 950, 950, nil, true)
 	submenu.slider('rRNG', 'R: Ace in the Hole', 0, 3000, 3000, nil, true)
 	local submenu = menu.submenu('UltimateOptions')
 	submenu.checkbutton('SafeR', 'Use Safe Ultimate')
