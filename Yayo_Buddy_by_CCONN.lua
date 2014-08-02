@@ -1,7 +1,8 @@
 --[[
 Version 2.0
 
-Changelog	
+Changelog	Version 2.0.1
+				Minor bug fix for Tristana AP Mixed Mode combo
 			Version 2.0
 				Copmlete re-work of Tristana
 				Added new Tristana Menu
@@ -859,7 +860,7 @@ Simple.Tristana = {
 -- AP Tristana Combo ----------------------------
 -------------------------------------------------
 			elseif CfgYayoBuddy.TristMode == 2 then
-				if YayoBuddy.RocketJumpOptions.SafeW and SafeW(targetAP) then
+				if CfgYayoBuddy.RocketJumpOptions.SafeW and SafeW(targetAP) then
 					if targetAP and CfgYayoBuddy._MixedMode.useW then
 						if ValidTarget(targetAP, Wrange) and GetDistance(targetAP) <= Wrange then
 							Tristana_W(targetAP)
