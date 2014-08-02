@@ -1,99 +1,163 @@
---[[
-Version 2.0
-
-Changelog	Version 2.0.1
-				Minor bug fix for Tristana AP Mixed Mode combo
-			Version 2.0
-				Copmlete re-work of Tristana
-				Added new Tristana Menu
-				AP / AD toggle in menu and different combos / targets for each
-				Added kill steal section for Tristana
-			Version 1.9
-				Modified Caitlyn R damage calculation to correct spell damage library calculation
-			Version 1.8
-				Yayo Buddy menu changes
-				Added Auto Potions from my Deadly Scripts
-				Added Auto Summoner Spells from my Deadly Scripts
-				Imported Deadly Caitlyn functions
-				Added new menu for Ezreal, Vayne, Caitlyn
-			Version 1.7
-				Added menu for Vayne
-				Added support for Samipot's Vayne Mighty Assistant
-				Added anti gap closer E options
-			Version 1.6
-				Added Ryze Combo from Deadly Ryze
-			Version 1.5
-				Added Riven Q,W,E Combo
-			Version 1.4
-				Added Cassiopeia Q,W,E Combo with Poison Detection from Deadly Cassio
-			Version 1.3
-				Added Ahri E,Q,W combo
-			Version 1.2
-				Added Master Yi Q,E Combo & W AA Reset
-			Version 1.1
-				Added Vayne wall condemn
-			Version 1.0
-				Initial release includes:
-					Ezreal Q Combo and W AA reset
-					Vayne Q AA Reset
-					Caitlyn Q,W Combo
-					Tristana Q,E Combo with E,R Kill Steal
-					Teemo - Doesn't work
-]]
-
+local ScriptName = 'CCONNs Yayo Buddy'
+local Version = '2.1'
 ---------------------------------------------------------------------------------------------------
--- To Do List -------------------------------------------------------------------------------------
+-- CHANGE LOG -------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
-	--Add Dodge Skillshots
-	--Add Roam Helper
-	--Get Summoner Spells working
-	--Add custom draw ranges
-	--Add auto interrupt for dangerous spells for champions who can interrupt
-	--Add Mana Manager - set mana threshold for each spell in each Yayo state
-
-	--Ezreal
-		-- Add Kill Steals
-		-- Add spell cast functions like Caitlyn
-
-	--Teemo
-		-- Fix everything, nothing works
-
-	--Master Yi
-		-- Add kill steals
-		-- Add spell cast functions like Caitlyn
-		-- Add menu
-
-	--Ahri
-		-- Add kill steals
-		-- Add spell cast functions like Caitlyn
-		-- Add menu
-
-	--Cassiopeia
-		-- Import Deadly Cassio functions
-		-- Create menu
-
-	--Riven
-		-- Add kill steal
-		-- Ultimate support
-		-- Auto shield
-		-- Add menu
-
-	--Caitlyn
-		-- Add Safe E anti gap closer
-		-- Manual E
-		-- Manual Q
-		-- Champion collision check for ultimate
-
-	--Ryze
-		-- Add reduced range auto attack option from Deadly Ryze
-		-- Add snare combo
-	--Vayne
-		-- Auto Interrupt spells with condemn
-		-- More detailed anti gap closer with menu options to select which champions to repel
-	--Tristana
-		-- Auto interrupt spells with condemn
-		--Anti gap closer like Vayne - menu to select who to repel
-
+--
+--			Version 2.1
+--				Added Tristana W option to jump to mouse position
+--				Imported Deadly Miss Fortune
+--				Created new Miss Fortune menu
+--				Added SafeR to Miss Fortune
+--				Added vast kill steals to Miss Fortune
+--			Version 2.0.1
+--				Minor bug fix for Tristana AP Mixed Mode combo
+--			Version 2.0
+--				Copmlete re-work of Tristana
+--				Added new Tristana Menu
+--				AP / AD toggle in menu and different combos / targets for each
+--				Added kill steal section for Tristana
+--			Version 1.9
+--				Modified Caitlyn R damage calculation to correct spell damage library calculation
+--			Version 1.8
+--				Yayo Buddy menu changes
+--				Added Auto Potions from my Deadly Scripts
+--				Added Auto Summoner Spells from my Deadly Scripts
+--				Imported Deadly Caitlyn functions
+--				Added new menu for Ezreal, Vayne, Caitlyn
+--			Version 1.7
+--				Added menu for Vayne
+--				Added support for Samipot's Vayne Mighty Assistant
+--				Added anti gap closer E options
+--			Version 1.6
+--				Added Ryze Combo from Deadly Ryze
+--			Version 1.5
+--				Added Riven Q,W,E Combo
+--			Version 1.4
+--				Added Cassiopeia Q,W,E Combo with Poison Detection from Deadly Cassio
+--			Version 1.3
+--				Added Ahri E,Q,W combo
+--			Version 1.2
+--				Added Master Yi Q,E Combo & W AA Reset
+--			Version 1.1
+--				Added Vayne wall condemn
+--			Version 1.0
+--				Initial release includes:
+--					Ezreal Q Combo and W AA reset
+--					Vayne Q AA Reset
+--					Caitlyn Q,W Combo
+--					Tristana Q,E Combo with E,R Kill Steal
+--					Teemo - Doesn't work
+--
+---------------------------------------------------------------------------------------------------
+-- CURRENTLY SUPPORTED CHAMPIONS ------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+--	Yayo Buddy will activate Yayo for all champions.
+--	All Yayo Buddy utility functions will be activated for all champions.
+--	Advanced logic (combos, kill steals, etc) is activated for the following champions only:
+--
+--		Ahri
+--		Caitlyn
+--		Cassiopeia
+--		Ezreal
+--		Master Yi
+--		Miss Fortune
+--		Riven
+--		Ryze
+--		Teemo
+--		Tristana
+--		Vayne
+--
+---------------------------------------------------------------------------------------------------
+-- CURRENTLY SUPPORTED UTILITY FEATURES -----------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+--
+--		Auto Potions by CCONN
+--			Health Pots
+--			Biscuits
+--			Chrystalline Flask
+--			Mana Pots
+--			Elixir of Fortitude
+--
+--		Auto Summoner Spells by CCONN -- not fully activated yet.
+--			Ignite
+--			Combo Ignite
+--			Heal
+--			Barrier
+--			Exhaust
+--			Clarity -- coming soon
+--			Smite -- coming soon
+--
+---------------------------------------------------------------------------------------------------
+-- TO DO LIST -------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+--		GENERAL CHANGES
+--			Add Dodge Skillshots
+--			Add Roam Helper
+--			Get Summoner Spells working
+--			Add custom draw ranges
+--			Add auto interrupt for dangerous spells for champions who can interrupt
+--			Add Mana Manager - set mana threshold for each spell in each Yayo state
+--			Option to disable move to mouse
+--
+--		EZREAL
+--			Add Kill Steals
+--			Add spell cast functions like Caitlyn
+--			Integrate E with dodge skillshots
+--
+--		TEEMO
+--			Fix everything, nothing works
+--
+--		MASTER YI
+--			Add kill steals
+--			Add spell cast functions like Caitlyn
+--			Add menu
+--			Integrate Q with dodge skillshots
+--
+--		AHRI
+--			Add kill steals
+--			Add spell cast functions like Caitlyn
+--			Add menu
+--			Integrate R with dodge skillshots
+--
+--		CASSIOPEIA
+--			Import Deadly Cassio functions
+--			Create menu
+--
+--		RIVEN
+--			Add kill steal
+--			Ultimate support
+--			Auto shield
+--			Add menu
+--			Add spellshot / auto shield
+--			Integrate E with dodge skillshots - possibly Q also
+--
+--		CAITLYN
+--			Add Safe E anti gap closer
+--			Manual E
+--			Manual Q
+--			Champion collision check for ultimate
+--			Integrate E with dodge skillshots
+--
+--		RYZE
+--			Add reduced range auto attack option from Deadly Ryze
+--			Add snare combo
+--
+--		VAYNE
+--			Auto Interrupt spells with condemn
+--			More detailed anti gap closer with menu options to select which champions to repel
+--			Integrate Q with dodge skillshots
+--
+--		TRISTANA
+--			Auto interrupt spells with condemn
+--			Anti gap closer like Vayne - menu to select who to repel
+--			Integrate W with dodge skillshots
+--			Include SafeW to mouse position option of Rocket Jump
+--
+--		MISS FORTUNE
+--			Add MEC ultimate
+--			Add Q Bounce
+--
 ---------------------------------------------------------------------------------------------------
 -- Required Libs ----------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
@@ -509,12 +573,22 @@ function CaitlynKillSteal() --15 KS Combinations
     		local edmg = getDmg("E",enemy,myHero)
 			local rdmg = getDmg("R",enemy,myHero)-((47+(myHero.selflevel * 3))*2)
 			local ignitedmg = (myHero.selflevel*20)+50
+
+-------------------------------------------------
+-- Q Kill Steal ---------------------------------
+-------------------------------------------------
 			if CfgYayoBuddy.KillSteal.Q and qdmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 1300 then --Q KS
 				Caitlyn_Q(enemy)
 			end
+-------------------------------------------------
+-- E Kill Steal ---------------------------------
+-------------------------------------------------
 			if CfgYayoBuddy.KillSteal.E and edmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 1000 then --E KS
 				Caitlyn_E(enemy)
 			end
+------------------------------------------------
+-- R Kill Steal --------------------------------
+------------------------------------------------
 			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
 				if CfgYayoBuddy.KillSteal.R and rdmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= (1500+(500*myHero.SpellLevelR)) then --R KS --SafeR
 					Caitlyn_R(enemy)
@@ -524,15 +598,24 @@ function CaitlynKillSteal() --15 KS Combinations
 					Caitlyn_R(enemy)
 				end
 			end
+-------------------------------------------------
+-- Ignite Kill Steal ----------------------------
+-------------------------------------------------
 			if CfgYayoBuddy.KillSteal.Ignite and ignitedmg > enemy.health and GetDistance(myHero,enemy) <= 600 then --Ignite KS
 				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
 					SummonerIgnite(enemy)
 				end
 			end
+-------------------------------------------------
+-- Q + E Kill Steal -----------------------------
+-------------------------------------------------
 			if CfgYayoBuddy.KillSteal.QE and qdmg + edmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 1000 then --Q,E KS
 				Caitlyn_Q(enemy)
 				Caitlyn_E(enemy)
 			end
+-------------------------------------------------
+-- Q + R Kill Steal -----------------------------
+-------------------------------------------------
 			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
 				if CfgYayoBuddy.KillSteal.QR and qdmg + rdmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1300 then --Q,R KS --SafeR
 					Caitlyn_Q(enemy)
@@ -544,12 +627,18 @@ function CaitlynKillSteal() --15 KS Combinations
 					Caitlyn_R(enemy)
 				end
 			end
+-------------------------------------------------
+-- Q + Ignite Kill Steal ------------------------
+-------------------------------------------------
 			if CfgYayoBuddy.KillSteal.QIgnite and qdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,Ignite KS
 				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
 					SummonerIgnite(enemy)
 					Caitlyn_Q(enemy)
 				end
 			end
+-------------------------------------------------
+-- E + R Kill Steal -----------------------------
+-------------------------------------------------
 			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
 				if CfgYayoBuddy.KillSteal.ER and edmg + rdmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1000 then --E,R KS
 					Caitlyn_E(enemy)
@@ -561,12 +650,18 @@ function CaitlynKillSteal() --15 KS Combinations
 					Caitlyn_R(enemy)
 				end
 			end
+-------------------------------------------------
+-- E + Ignite Kill Steal ------------------------
+-------------------------------------------------
 			if CfgYayoBuddy.KillSteal.EIgnite and edmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,Ignite KS
 				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
 					SummonerIgnite(enemy)
 					Caitlyn_E(enemy)
 				end
 			end
+-------------------------------------------------
+-- R + Ignite Kill Steal ------------------------
+-------------------------------------------------
 			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
 				if CfgYayoBuddy.KillSteal.RIgnite and rdmg + ignitedmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --R,Ignite KS --SafeR
 					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
@@ -582,6 +677,9 @@ function CaitlynKillSteal() --15 KS Combinations
 					end
 				end
 			end
+-------------------------------------------------
+-- Q + E + R Kill Steal -------------------------
+-------------------------------------------------
 			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
 				if CfgYayoBuddy.KillSteal.QER and qdmg + edmg + rdmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1000 then --Q,E,R KS --SafeR
 					Caitlyn_Q(enemy)
@@ -595,6 +693,9 @@ function CaitlynKillSteal() --15 KS Combinations
 					Caitlyn_R(enemy)
 				end
 			end
+-------------------------------------------------
+-- Q + E + Ignite Kill Steal --------------------
+-------------------------------------------------
 			if CfgYayoBuddy.KillSteal.QEIgnite and qdmg + edmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,E,Ignite KS
 				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
 					SummonerIgnite(enemy)
@@ -602,6 +703,9 @@ function CaitlynKillSteal() --15 KS Combinations
 					Caitlyn_E(enemy)
 				end
 			end
+-------------------------------------------------
+-- Q + R + Ignite Kill Steal --------------------
+-------------------------------------------------
 			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
 				if CfgYayoBuddy.KillSteal.QRIgnite and qdmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,R,Ignite KS --SafeR
 					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
@@ -619,6 +723,9 @@ function CaitlynKillSteal() --15 KS Combinations
 					end
 				end
 			end
+-------------------------------------------------
+-- E + R + Igite Kill Steal ---------------------
+-------------------------------------------------
 			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
 				if CfgYayoBuddy.KillSteal.ERIgnite and edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,R,Ignite KS --SafeR
 					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
@@ -636,6 +743,9 @@ function CaitlynKillSteal() --15 KS Combinations
 					end
 				end
 			end
+-------------------------------------------------
+-- Q + E + R + Ignite Kill Steal ----------------
+-------------------------------------------------
 			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
 				if CfgYayoBuddy.KillSteal.QERIgnite and qdmg + edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,E,R,Ignite KS --SafeR
 					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
@@ -1065,10 +1175,16 @@ function Tristana_W(WTarget)
 	local Wrange, Wwidth, Wspeed, Wdelay = CfgYayoBuddy._SpellRanges.wRNG, 270, 1150, 0.5
 	if WTarget ~= nil then
 		if GetDistance(myHero, WTarget) <= Wrange and myHero.mana >= 60 then
-			local CastPosition, HitChance, Position = YP:GetCircularCastPosition(WTarget, Wdelay, Wwidth, Wrange, Wspeed, myHero, false)
-			if HitChance >= 2 then
-				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
-				CastSpellXYZ('W', x, y, z)
+			if CfgYayoBuddy.RocketJumpOptions.TristWMode == 1 then
+				CastSpellXYZ('W', mousePos.x, mousePos.y, mousePos.z)
+			else
+				if CfgYayoBuddy.RocketJumpOptions.TristWMode == 2 then
+					local CastPosition, HitChance, Position = YP:GetCircularCastPosition(WTarget, Wdelay, Wwidth, Wrange, Wspeed, myHero, false)
+					if HitChance >= 2 then
+						local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+						CastSpellXYZ('W', x, y, z)
+					end
+				end
 			end
 		end
 	end
@@ -1539,6 +1655,406 @@ Simple.Ryze = {
 	end
 }
 
+---------------------------------------------------------------------------------------------------
+-- Miss Fortune Section ---------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+Simple.MissFortune = {
+	OnTick = function(target)
+		local targetQ = GetWeakEnemy('PHYS', 650)
+		local targetW = GetWeakEnemy('PHYS', 650)
+		local targetE = GetWeakEnemy('PHYS', 800)
+		local targetR = GetWeakEnemy('PHYS', 1400)
+		local Qrange = CfgYayoBuddy._SpellRanges.qRNG
+		local Wrange = CfgYayoBuddy._SpellRanges.wRNG
+		local Erange = CfgYayoBuddy._SpellRanges.eRNG
+		local Rrange = CfgYayoBuddy._SpellRanges.rRNG
+-------------------------------------------------
+-- Yayo Auto Carry State ------------------------
+-------------------------------------------------		
+		if yayo.Config.AutoCarry then
+			if targetW and CfgYayoBuddy._AutoCarry.useW then
+				if ValidTarget(targetW, Wrange) then
+					MissFortune_W(targetW)
+				end
+			end
+			if targetQ and CfgYayoBuddy._AutoCarry.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					MissFortune_Q(targetQ)
+				end
+			end
+			if targetE and CfgYayoBuddy._AutoCarry.useE then
+				if ValidTarget(targetE, Erange) then
+					MissFortune_E(targetE)
+				end
+			end
+			if targetR and CfgYayoBuddy._AutoCarry.useR then
+				if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
+					if ValidTarget(targetR, Rrange) then
+						MissFortune_R(targetR)
+					end
+				else
+					if ValidTarget(targetR, Rrange) then
+						MissFortune_R(targetR)
+					end
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Mixed Mode State ------------------------
+-------------------------------------------------
+		if yayo.Config.Mixed then
+			if targetW and CfgYayoBuddy._MixedMode.useW then
+				if ValidTarget(targetW, Wrange) then
+					MissFortune_W(targetW)
+				end
+			end
+			if targetQ and CfgYayoBuddy._MixedMode.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					MissFortune_Q(targetQ)
+				end
+			end
+			if targetE and CfgYayoBuddy._MixedMode.useE then
+				if ValidTarget(targetE, Erange) then
+					MissFortune_E(targetE)
+				end
+			end
+			if targetR and CfgYayoBuddy._MixedMode.useR then
+				if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
+					if ValidTarget(targetR, Rrange) then
+						MissFortune_R(targetR)
+					end
+				else
+					if ValidTarget(targetR, Rrange) then
+						MissFortune_R(targetR)
+					end
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Last Hit State --------------------------
+-------------------------------------------------
+		if yayo.Config.LastHit then
+			if targetW and CfgYayoBuddy._LastHit.useW then
+				if ValidTarget(targetW, Wrange) then
+					MissFortune_W(targetW)
+				end
+			end
+			if targetQ and CfgYayoBuddy._LastHit.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					MissFortune_Q(targetQ)
+				end
+			end
+			if targetE and CfgYayoBuddy._LastHit.useE then
+				if ValidTarget(targetE, Erange) then
+					MissFortune_E(targetE)
+				end
+			end
+			if targetR and CfgYayoBuddy._LastHit.useR then
+				if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
+					if ValidTarget(targetR, Rrange) then
+						MissFortune_R(targetR)
+					end
+				else
+					if ValidTarget(targetR, Rrange) then
+						MissFortune_R(targetR)
+					end
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Lane Clear State ------------------------
+-------------------------------------------------
+		if yayo.Config.LaneClear then
+			if targetW and CfgYayoBuddy._LaneClear.useW then
+				if ValidTarget(targetW, Wrange) then
+					MissFortune_W(targetW)
+				end
+			end
+			if targetQ and CfgYayoBuddy._LaneClear.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					MissFortune_Q(targetQ)
+				end
+			end
+			if targetE and CfgYayoBuddy._LaneClear.useE then
+				if ValidTarget(targetE, Erange) then
+					MissFortune_E(targetE)
+				end
+			end
+			if targetR and CfgYayoBuddy._LaneClear.useR then
+				if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
+					if ValidTarget(targetR, Rrange) then
+						MissFortune_R(targetR)
+					end
+				else
+					if ValidTarget(targetR, Rrange) then
+						MissFortune_R(targetR)
+					end
+				end
+			end
+		end
+		if CfgYayoBuddy.KillSteal.KillSteal then MissFortuneKillSteal() end
+	end
+}
+
+-------------------------------------------------
+--KILL STEAL FUNCTIONS---------------------------
+-------------------------------------------------
+function MissFortuneKillSteal() --15 KS Combinations
+	for i = 1, objManager:GetMaxHeroes()  do
+    	local enemy = objManager:GetHero(i)
+    	if (enemy ~= nil and enemy.team ~= myHero.team and enemy.visible == 1 and enemy.invulnerable == 0 and enemy.dead == 0) then
+			local qdmg = getDmg("Q",enemy,myHero)
+			local wdmg = getDmg("W",enemy,myHero)
+    		local edmg = getDmg("E",enemy,myHero)
+			local rdmg = getDmg("R",enemy,myHero)
+			local ignitedmg = (myHero.selflevel*20)+50
+
+-------------------------------------------------
+-- Q Kill Steal ---------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Q and qdmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 1300 then --Q KS
+				MissFortune_Q(enemy)
+			end
+-------------------------------------------------
+-- E Kill Steal ---------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.E and edmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 1000 then --E KS
+				MissFortune_E(enemy)
+			end
+------------------------------------------------
+-- R Kill Steal --------------------------------
+------------------------------------------------
+			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
+				if CfgYayoBuddy.KillSteal.R and rdmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= (1500+(500*myHero.SpellLevelR)) then --R KS --SafeR
+					MissFortune_R(enemy)
+				end
+			else
+				if CfgYayoBuddy.KillSteal.R and rdmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= (1500+(500*myHero.SpellLevelR)) then --R KS
+					MissFortune_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- Ignite Kill Steal ----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Ignite and ignitedmg > enemy.health and GetDistance(myHero,enemy) <= 600 then --Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + E Kill Steal -----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QE and qdmg + edmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 1000 then --Q,E KS
+				MissFortune_Q(enemy)
+				MissFortune_E(enemy)
+			end
+-------------------------------------------------
+-- Q + R Kill Steal -----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
+				if CfgYayoBuddy.KillSteal.QR and qdmg + rdmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1300 then --Q,R KS --SafeR
+					MissFortune_Q(enemy)
+					MissFortune_R(enemy)
+				end
+			else
+				if CfgYayoBuddy.KillSteal.QR and qdmg + rdmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1300 then --Q,R KS
+					MissFortune_Q(enemy)
+					MissFortune_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QIgnite and qdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					MissFortune_Q(enemy)
+				end
+			end
+-------------------------------------------------
+-- E + R Kill Steal -----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
+				if CfgYayoBuddy.KillSteal.ER and edmg + rdmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1000 then --E,R KS
+					MissFortune_E(enemy)
+					MissFortune_R(enemy)
+				end
+			else
+				if CfgYayoBuddy.KillSteal.ER and edmg + rdmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1000 then --E,R KS --SafeR
+					MissFortune_E(enemy)
+					MissFortune_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- E + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.EIgnite and edmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					MissFortune_E(enemy)
+				end
+			end
+-------------------------------------------------
+-- R + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
+				if CfgYayoBuddy.KillSteal.RIgnite and rdmg + ignitedmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --R,Ignite KS --SafeR
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						SummonerIgnite(enemy)
+						MissFortune_R(enemy)
+					end
+				end
+			else
+				if CfgYayoBuddy.KillSteal.RIgnite and rdmg + ignitedmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --R,Ignite KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						SummonerIgnite(enemy)
+						MissFortune_R(enemy)
+					end
+				end
+			end
+-------------------------------------------------
+-- Q + E + R Kill Steal -------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
+				if CfgYayoBuddy.KillSteal.QER and qdmg + edmg + rdmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1000 then --Q,E,R KS --SafeR
+					MissFortune_Q(enemy)
+					MissFortune_E(enemy)
+					MissFortune_R(enemy)
+				end
+			else
+				if CfgYayoBuddy.KillSteal.QER and qdmg + edmg + rdmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1000 then --Q,E,R KS
+					MissFortune_Q(enemy)
+					MissFortune_E(enemy)
+					MissFortune_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + E + Ignite Kill Steal --------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QEIgnite and qdmg + edmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,E,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					MissFortune_Q(enemy)
+					MissFortune_E(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + R + Ignite Kill Steal --------------------
+-------------------------------------------------
+			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
+				if CfgYayoBuddy.KillSteal.QRIgnite and qdmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,R,Ignite KS --SafeR
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						SummonerIgnite(enemy)
+						MissFortune_Q(enemy)
+						MissFortune_R(enemy)
+					end
+				end
+			else
+				if CfgYayoBuddy.KillSteal.QRIgnite and qdmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,R,Ignite KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						SummonerIgnite(enemy)
+						MissFortune_Q(enemy)
+						MissFortune_R(enemy)
+					end
+				end
+			end
+-------------------------------------------------
+-- E + R + Igite Kill Steal ---------------------
+-------------------------------------------------
+			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
+				if CfgYayoBuddy.KillSteal.ERIgnite and edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,R,Ignite KS --SafeR
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						SummonerIgnite(enemy)
+						MissFortune_E(enemy)
+						MissFortune_R(enemy)
+					end
+				end
+			else
+				if CfgYayoBuddy.KillSteal.ERIgnite and edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,R,Ignite KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						SummonerIgnite(enemy)
+						MissFortune_E(enemy)
+						MissFortune_R(enemy)
+					end
+				end
+			end
+-------------------------------------------------
+-- Q + E + R + Ignite Kill Steal ----------------
+-------------------------------------------------
+			if CfgYayoBuddy.UltimateOptions.SafeR and SafeR() then
+				if CfgYayoBuddy.KillSteal.QERIgnite and qdmg + edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,E,R,Ignite KS --SafeR
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						SummonerIgnite(enemy)
+						MissFortune_Q(enemy)
+						MissFortune_E(enemy)
+						MissFortune_R(enemy)
+					end
+				end
+			else
+				if CfgYayoBuddy.KillSteal.ERIgnite and edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,R,Ignite KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						SummonerIgnite(enemy)
+						MissFortune_E(enemy)
+						MissFortune_R(enemy)
+					end
+				end
+			end
+		end
+	end
+end
+
+-------------------------------------------------
+-- Miss Fortune Spell Functions -----------------
+-------------------------------------------------
+function MissFortune_Q(QTarget)
+	if QTarget ~= nil then
+		if GetDistance(myHero, QTarget) <= CfgYayoBuddy._SpellRanges.qRNG and myHero.mana >= (40 + (3 * myHero.SpellLevelQ)) then
+			CastSpellTarget('Q', QTarget)
+		end
+	end
+end
+
+function MissFortune_W(WTarget)
+	if WTarget ~= nil then
+		if GetDistance(myHero, WTarget) <= CfgYayoBuddy._SpellRanges.wRNG and myHero.mana >= (25 + (5 * myHero.SpellLevelQ)) then
+			CastSpellTarget('W', myHero)
+		end
+	end
+end
+
+function MissFortune_E(ETarget)
+	local Erange, Ewidth, Espeed, Edelay = CfgYayoBuddy._SpellRanges.eRNG, 300, 500, 0.5
+	if ETarget ~= nil then
+		if GetDistance(myHero, ETarget) <= Espeed and myHero.mana >= 80 then
+			local CastPosition, HitChance, Position = YP:GetLineCastPosition(ETarget, Edelay, Ewidth, Erange, Espeed, myHero, false)
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('E', x, y, z)
+			end
+		end
+	end
+end
+
+function MissFortune_R(RTarget)
+	if RTarget ~= nil then
+		local Rrange, Rwidth, Rspeed, Rdelay = CfgYayoBuddy._SpellRanges.rRNG, 100, 780, 0.333
+		if RTarget ~= nil then
+			if GetDistance(myHero, RTarget) <= Rspeed and myHero.mana >= 100 then
+				local CastPosition, HitChance, Position = YP:GetConeAOECastPosition(RTarget, Rdelay, 30, Rrange, Rspeed, myHero)
+				if HitChance >= 2 then
+					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+					CastSpellXYZ('R', x, y, z)
+					local timer = os.time()
+					yayo.DisableAttacks()
+					yayo.DisableMove()
+					repeat until os.time() > timer + 2
+					yayo.EnableAttacks()
+					yayo.EnableMove()
+				end
+			end
+		end
+	end
+end
 
 ---------------------------------------------------------------------------------------------------
 -- Auto Potions -----------------------------------------------------------------------------------
@@ -1821,6 +2337,56 @@ if myHero.name == "Caitlyn" then
 	submenu.checkbutton('QERIgnite', 'Q + E + R + Ignite', true)
 end
 -------------------------------------------------
+-- Miss Fortune Sub Menus -----------------------
+-------------------------------------------------
+if myHero.name == "MissFortune" then
+	local submenu = menu.submenu('_AutoCarry')
+	submenu.checkbutton('useQ', 'Q: Double Up', true)
+	submenu.checkbutton('useW', 'W: Impure Shots', true)
+	submenu.checkbutton('useE', 'E: Make It Rain', true)
+	submenu.keytoggle('useR', 'R: Bullet Time', Keys.Z, false)
+	local submenu = menu.submenu('_LastHit')
+	submenu.checkbutton('useQ', 'Q: Double Up', true)
+	submenu.checkbutton('useW', 'W: Impure Shots', false)
+	submenu.checkbutton('useE', 'E: Make It Rain', false)
+	submenu.checkbutton('useR', 'R: Bullet Time', false)
+	local submenu = menu.submenu('_MixedMode')
+	submenu.checkbutton('useQ', 'Q: Double Up', true)
+	submenu.checkbutton('useW', 'W: Impure Shots', false)
+	submenu.checkbutton('useE', 'E: Make It Rain', false)
+	submenu.checkbutton('useR', 'R: Bullet Time', false)
+	local submenu = menu.submenu('_LaneClear')
+	submenu.checkbutton('useQ', 'Q: Double Up', true)
+	submenu.checkbutton('useW', 'W: Impure Shots', false)
+	submenu.checkbutton('useE', 'E: Make It Rain', false)
+	submenu.checkbutton('useR', 'R: Bullet Time', false)
+	local submenu = menu.submenu('_SpellRanges')
+	submenu.slider('qRNG', 'Q: Double Up', 0, 650, 650, nil, true)
+	submenu.slider('wRNG', 'W: Impure Shots', 0, 650, 650, nil, true)
+	submenu.slider('eRNG', 'E: Make It Rain', 0, 800, 800, nil, true)
+	submenu.slider('rRNG', 'R: Bullet Time', 0, 1400, 1400, nil, true)
+	local submenu = menu.submenu('UltimateOptions')
+	submenu.checkbutton('SafeR', 'Use Safe Ultimate')
+	submenu.slider('SafeR_Value', 'Safe Zone Range', 0, 2000, 700, nil, true)
+	local submenu = menu.submenu('KillSteal')
+	submenu.checkbutton('KillSteal', 'Use Killsteals', true)
+	submenu.checkbutton('Q', 'Q', true)
+	submenu.checkbutton('E', 'E', true)
+	submenu.checkbutton('R', 'R', true)
+	submenu.checkbutton('Ignite', 'Ignite', true)
+	submenu.checkbutton('QE', 'Q + E', true)
+	submenu.checkbutton('QR', 'Q + R', true)
+	submenu.checkbutton('QIgnite', 'Q + Ignite', true)
+	submenu.checkbutton('ER', 'E + R', true)
+	submenu.checkbutton('EIgnite', 'E + Ignite', true)
+	submenu.checkbutton('RIgnite', 'R + Ignite', true)
+	submenu.checkbutton('QER', 'Q + E + R', true)
+	submenu.checkbutton('QEIgnite', 'Q + E + Ignite', true)
+	submenu.checkbutton('QRIgnite', 'Q + R + Ignite', true)
+	submenu.checkbutton('ERIgnite', 'E + R + Ignite', true)
+	submenu.checkbutton('QERIgnite', 'Q + E + R + Ignite', true)
+end
+-------------------------------------------------
 -- Tristana Sub Menus ----------------------------
 -------------------------------------------------
 if myHero.name == "Tristana" then
@@ -1850,6 +2416,7 @@ if myHero.name == "Tristana" then
 	--submenu.slider('eRNG', 'E: Explosive Shot', 0, 703, 703, nil, true)
 	--submenu.slider('rRNG', 'R: Buster Shot', 0, 703, 703, nil, true)
 	local submenu = menu.submenu('RocketJumpOptions')
+	submenu.slider('TristWMode', 'Jump To:', 1, 2, 1, {"Mouse Position","Target"})
 	submenu.checkbutton('SafeW', 'Use Safe Rocket Jump')
 	submenu.slider('SafeW_Value', 'Safe Zone Range', 0, 2000, 700, nil, true)
 	local submenu = menu.submenu('KillSteal')
@@ -1906,6 +2473,9 @@ end
 	submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
 	submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
 	submenu.slider('Biscuit_Value', 'Biscuit Value', 0, 100, 60, nil, true)
+menu.label('lbl0', ' ')
+menu.label('lbl1', 'CCONNs Yayo Buddy Version '..tostring(Version))
+menu.label('lbl2', 'www.facebook.com/CCONN81')
 
 Init()
 SetTimerCallback('OnTick')
