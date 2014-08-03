@@ -1,9 +1,11 @@
 local ScriptName = 'CCONNs Yayo Buddy'
-local Version = '2.1'
+local Version = '2.1.1'
 ---------------------------------------------------------------------------------------------------
 -- CHANGE LOG -------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
 --
+--			Version 2.1.1
+--				Removed wdmg from Miss Fortune kill steal function
 --			Version 2.1
 --				Added Tristana W option to jump to mouse position
 --				Imported Deadly Miss Fortune
@@ -1804,7 +1806,6 @@ function MissFortuneKillSteal() --15 KS Combinations
     	local enemy = objManager:GetHero(i)
     	if (enemy ~= nil and enemy.team ~= myHero.team and enemy.visible == 1 and enemy.invulnerable == 0 and enemy.dead == 0) then
 			local qdmg = getDmg("Q",enemy,myHero)
-			local wdmg = getDmg("W",enemy,myHero)
     		local edmg = getDmg("E",enemy,myHero)
 			local rdmg = getDmg("R",enemy,myHero)
 			local ignitedmg = (myHero.selflevel*20)+50
