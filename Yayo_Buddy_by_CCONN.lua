@@ -1,9 +1,12 @@
 local ScriptName = 'CCONNs Yayo Buddy'
-local Version = '2.2'
+local Version = '2.3'
 ---------------------------------------------------------------------------------------------------
 -- CHANGE LOG -------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
 --
+--			Version 2.3
+--				Re-work of Teemo
+--					New Menu, Spell Cast functions, Kill Steals, Combo Functions, AA Reset
 --			Version 2.2
 --				Fully activated auto summoner spells
 --					ignite / exhaust are champion and yayo state specific and need to be added for each champion
@@ -86,13 +89,13 @@ local Version = '2.2'
 --			Mana Pots
 --			Elixir of Fortitude
 --
---		Auto Summoner Spells by CCONN -- not fully activated yet.
+--		Auto Summoner Spells by CCONN
 --			Ignite
 --			Combo Ignite
 --			Heal
 --			Barrier
 --			Exhaust
---			Clarity -- coming soon
+--			Clarity
 --			Smite -- coming soon
 --
 ---------------------------------------------------------------------------------------------------
@@ -116,7 +119,8 @@ local Version = '2.2'
 --			Add Ignite / Exhaust for each Yayo State
 --
 --		TEEMO
---			Fix everything, nothing works
+--			Add ultimate stack manager (option to force drop shroom if 3 stacks and full mana)
+--			Add shroom distance manager - prevent you from dropping multiple shrooms too close to each other
 --
 --		MASTER YI
 --			Add kill steals
@@ -1464,25 +1468,219 @@ end
 ---------------------------------------------------------------------------------------------------
 Simple.Teemo = {
 	OnTick = function(target)
-		local Rrange, Rwidth, Rspeed, Rdelay = 230, 60, math.huge, 0.1
-		if target and (yayo.Config.AutoCarry or yayo.Config.Mixed) then
-			if ValidTarget(target, Rrange) and myHero.SpellTimeR > 1.0 then
-				local CastPosition, HitChance, Position = YP:GetCircularCastPosition(target, Rdelay, Rwidth, Rrange, Rspeed, myHero, false)
-				if HitChance >= 2 then
-					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
-					CastSpellXYZ('R', x, y, z)
+		local Qrange = CfgYayoBuddy._SpellRanges.qRNG
+		local Wrange = CfgYayoBuddy._SpellRanges.wRNG
+		local Rrange = 230
+		local targetQ = GetWeakEnemy('MAGIC',Qrange)
+		local targetW = GetWeakEnemy('MAGIC', Wrange)
+		local targetR = GetWeakEnemy('MAGIC', Rrange)
+-------------------------------------------------
+-- Yayo Auto Carry State ------------------------
+-------------------------------------------------		
+		if yayo.Config.AutoCarry then
+			if targetQ and CfgYayoBuddy._AutoCarry.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) > myHero.range then
+					Teemo_Q(targetQ)
+				end
+			end
+			if targetW and CfgYayoBuddy._AutoCarry.useW then
+				if ValidTarget(targetW, Wrange) then
+					Teemo_W(targetW)
+				end
+			end
+			if targetR and CfgYayoBuddy._AutoCarry.useR then
+				if ValidTarget(targetR, Rrange) then
+					Teemo_R(targetR)
 				end
 			end
 		end
+-------------------------------------------------
+-- Yayo Mixed Mode State ------------------------
+-------------------------------------------------
+		if yayo.Config.Mixed then
+			if targetQ and CfgYayoBuddy._MixedMode.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) > myHero.range then
+					Teemo_Q(targetQ)
+				end
+			end
+			if targetW and CfgYayoBuddy._MixedMode.useW then
+				if ValidTarget(targetW, Wrange) then
+					Teemo_W(targetW)
+				end
+			end
+			if targetR and CfgYayoBuddy._MixedMode.useR then
+				if ValidTarget(targetR, Rrange) then
+					Teemo_R(targetR)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Last Hit State --------------------------
+-------------------------------------------------
+		if yayo.Config.LastHit then
+			if targetQ and CfgYayoBuddy._LastHit.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) > myHero.range then
+					Teemo_Q(targetQ)
+				end
+			end
+			if targetW and CfgYayoBuddy._LastHit.useW then
+				if ValidTarget(targetW, Wrange) then
+					Teemo_W(targetW)
+				end
+			end
+			if targetR and CfgYayoBuddy._LastHit.useR then
+				if ValidTarget(targetR, Rrange) then
+					Teemo_R(targetR)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Lane Clear State ------------------------
+-------------------------------------------------
+		if yayo.Config.LaneClear then
+			if targetQ and CfgYayoBuddy._LaneClear.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) > myHero.range then
+					Teemo_Q(targetQ)
+				end
+			end
+			if targetW and CfgYayoBuddy._LaneClear.useW then
+				if ValidTarget(targetW, Wrange) then
+					Teemo_W(targetW)
+				end
+			end
+			if targetR and CfgYayoBuddy._LaneClear.useR then
+				if ValidTarget(targetR, Rrange) then
+					Teemo_R(targetR)
+				end
+			end
+		end
+		if CfgYayoBuddy.KillSteal.KillSteal then TeemoKillSteal() end
 	end,
 	AfterAttack = function(target)
-		if target and (yayo.Config.AutoCarry or yayo.Config.Mixed) then
-			if ValidTarget(target, myHero.range) then
-				CastSpellTarget('Q', target)
+		if target and yayo.Config.AutoCarry then
+			if CfgYayoBuddy._AutoCarry.useQ then
+				Teemo_Q(target)
+			end
+		end
+		if target and yayo.Config.Mixed then
+			if CfgYayoBuddy._MixedMode.useQ then
+				Teemo_Q(target)
+			end
+		end
+		if target and yayo.Config.LastHit then
+			if CfgYayoBuddy._LastHit.useQ then
+				Teemo_Q(target)
+			end
+		end
+		if target and yayo.Config.LaneClear then
+			if CfgYayoBuddy._LaneClear.useQ then
+				Teemo_Q(target)
 			end
 		end
 	end
 }
+
+-------------------------------------------------
+--KILL STEAL FUNCTIONS---------------------------
+-------------------------------------------------
+	function TeemoKillSteal() --15 KS Combinations
+		for i = 1, objManager:GetMaxHeroes()  do
+	    	local enemy = objManager:GetHero(i)
+	    	if (enemy ~= nil and enemy.team ~= myHero.team and enemy.visible == 1 and enemy.invulnerable == 0 and enemy.dead == 0) then
+				local qdmg = getDmg("Q",enemy,myHero)
+				local rdmg = getDmg("R",enemy,myHero)
+				local ignitedmg = (myHero.selflevel*20)+50
+
+	-------------------------------------------------
+	-- Q Kill Steal ---------------------------------
+	-------------------------------------------------
+				if CfgYayoBuddy.KillSteal.Q and qdmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 580 then --Q KS
+					Teemo_Q(enemy)
+				end
+	------------------------------------------------
+	-- R Kill Steal --------------------------------
+	------------------------------------------------
+				if CfgYayoBuddy.KillSteal.R and rdmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 230 then --R KS
+					Teemo_R(enemy)
+				end
+	-------------------------------------------------
+	-- Ignite Kill Steal ----------------------------
+	-------------------------------------------------
+				if CfgYayoBuddy.KillSteal.Ignite and ignitedmg > enemy.health and GetDistance(myHero,enemy) <= 600 then --Ignite KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						SummonerIgnite(enemy)
+					end
+				end
+	-------------------------------------------------
+	-- Q + R Kill Steal -----------------------------
+	-------------------------------------------------
+				if CfgYayoBuddy.KillSteal.QR and qdmg + rdmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 230 then --Q,R KS
+					Teemo_Q(enemy)
+					Teemo_R(enemy)
+				end
+	-------------------------------------------------
+	-- Q + Ignite Kill Steal ------------------------
+	-------------------------------------------------
+				if CfgYayoBuddy.KillSteal.QIgnite and qdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 580 then --Q,Ignite KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						SummonerIgnite(enemy)
+						Teemo_Q(enemy)
+					end
+				end
+	-------------------------------------------------
+	-- R + Ignite Kill Steal ------------------------
+	-------------------------------------------------
+				if CfgYayoBuddy.KillSteal.RIgnite and rdmg + ignitedmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 230 then --R,Ignite KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						SummonerIgnite(enemy)
+						Teemo_R(enemy)
+					end
+				end
+	-------------------------------------------------
+	-- Q + R + Ignite Kill Steal --------------------
+	-------------------------------------------------
+				if CfgYayoBuddy.KillSteal.QRIgnite and qdmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 230 then --Q,R,Ignite KS
+					if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+						SummonerIgnite(enemy)
+						Teemo_Q(enemy)
+						Teemo_R(enemy)
+					end
+				end
+			end
+		end
+	end
+
+-------------------------------------------------
+-- Teemo Spell Functions ----------------------
+-------------------------------------------------
+function Teemo_Q(QTarget)
+	if QTarget ~= nil then
+		if GetDistance(myHero, QTarget) <= CfgYayoBuddy._SpellRanges.qRNG and myHero.mana >= (60 + (10 * myHero.SpellLevelQ)) then
+			CastSpellTarget('Q', QTarget)
+		end
+	end
+end
+
+function Teemo_W(WTarget)
+	if WTarget ~= nil then
+		if GetDistance(myHero, WTarget) <= CfgYayoBuddy._SpellRanges.wRNG and myHero.mana >= 40 then
+			CastSpellTarget('W', myHero)
+		end
+	end
+end
+
+function Teemo_R(RTarget)
+	local Rrange, Rwidth, Rspeed, Rdelay = 230, 60, math.huge, 0.1
+	if RTarget ~= nil then
+		if GetDistance(myHero, RTarget) <= 230 and myHero.mana >= (50 + (25 * myHero.SpellLevelR)) and myHero.SpellTimeR > 1.0 then
+			local CastPosition, HitChance, Position = YP:GetCircularCastPosition(RTarget, Rdelay, Rwidth, Rrange, Rspeed, myHero, false)
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('R', x, y, z)
+			end
+		end
+	end
+end
 
 ---------------------------------------------------------------------------------------------------
 -- Master Yi Section ------------------------------------------------------------------------------
@@ -2100,7 +2298,7 @@ Simple.KogMaw = {
 		local targetR = GetWeakEnemy('PHYS', Rrange)
 -------------------------------------------------
 -- Yayo Auto Carry State ------------------------
--------------------------------------------------		
+-------------------------------------------------
 		if yayo.Config.AutoCarry then
 			if targetW and CfgYayoBuddy._AutoCarry.useW then
 				if ValidTarget(targetW, Wrange) then
@@ -2940,6 +3138,39 @@ if myHero.name == "Vayne" then
 end
 if myHero.name == "Vayne" and CfgYayoBuddy._AutoCondemn.AutoCondemnVMA then
 	require "vayne_mighty_assistant"
+end
+-------------------------------------------------
+-- Teemo Sub Menus ----------------------------
+-------------------------------------------------
+if myHero.name == "Teemo" then
+	local submenu = menu.submenu('_AutoCarry')
+	submenu.checkbutton('useQ', 'Q: Blinding Dart', true)
+	submenu.checkbutton('useW', 'W: Move Quick', true)
+	submenu.keytoggle('useR', 'R: Noxious Trap', Keys.Z, true)
+	local submenu = menu.submenu('_LastHit')
+	submenu.checkbutton('useQ', 'Q: Blinding Dart', false)
+	submenu.checkbutton('useW', 'W: Move Quick', false)
+	submenu.checkbutton('useR', 'R: Noxious Trap', false)
+	local submenu = menu.submenu('_MixedMode')
+	submenu.checkbutton('useQ', 'Q: Blinding Dart', true)
+	submenu.checkbutton('useW', 'W: Move Quick', false)
+	submenu.checkbutton('useR', 'R: Noxious Trap', false)
+	local submenu = menu.submenu('_LaneClear')
+	submenu.checkbutton('useQ', 'Q: Blinding Dart', true)
+	submenu.checkbutton('useW', 'W: Move Quick', false)
+	submenu.checkbutton('useR', 'R: Noxious Trap', false)
+	local submenu = menu.submenu('_SpellRanges')
+	submenu.slider('qRNG', 'Q: Blinding Dart', 0, 580, 580, nil, true)
+	submenu.slider('wRNG', 'W: Move Quick', 0, 800, 700, nil, true)
+	local submenu = menu.submenu('KillSteal')
+	submenu.checkbutton('KillSteal', 'Use Killsteals', true)
+	submenu.checkbutton('Q', 'Q', true)
+	submenu.checkbutton('R', 'R', true)
+	submenu.checkbutton('Ignite', 'Ignite', true)
+	submenu.checkbutton('QR', 'Q + R', true)
+	submenu.checkbutton('QIgnite', 'Q + Ignite', true)
+	submenu.checkbutton('RIgnite', 'R + Ignite', true)
+	submenu.checkbutton('QRIgnite', 'Q + R + Ignite', true)
 end
 -------------------------------------------------
 -- Auto Potions Sub Menus -----------------------
