@@ -1,9 +1,13 @@
 local ScriptName = 'CCONNs Yayo Buddy'
-local Version = '2.1.1'
+local Version = '2.2'
 ---------------------------------------------------------------------------------------------------
 -- CHANGE LOG -------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
 --
+--			Version 2.2
+--				Fully activated auto summoner spells
+--					ignite / exhaust are champion and yayo state specific and need to be added for each champion
+--				Ported Deadly KogMaw from BoL
 --			Version 2.1.1
 --				Removed wdmg from Miss Fortune kill steal function
 --			Version 2.1
@@ -62,6 +66,7 @@ local Version = '2.1.1'
 --		Caitlyn
 --		Cassiopeia
 --		Ezreal
+--		KogMaw
 --		Master Yi
 --		Miss Fortune
 --		Riven
@@ -101,11 +106,14 @@ local Version = '2.1.1'
 --			Add auto interrupt for dangerous spells for champions who can interrupt
 --			Add Mana Manager - set mana threshold for each spell in each Yayo state
 --			Option to disable move to mouse
+--			Add Auto Exhaust on dangerous spells, eg. Katarina Ultimate
+--			Add Auto Ignite on Mundo Ultimate - other spells?
 --
 --		EZREAL
 --			Add Kill Steals
 --			Add spell cast functions like Caitlyn
 --			Integrate E with dodge skillshots
+--			Add Ignite / Exhaust for each Yayo State
 --
 --		TEEMO
 --			Fix everything, nothing works
@@ -115,16 +123,19 @@ local Version = '2.1.1'
 --			Add spell cast functions like Caitlyn
 --			Add menu
 --			Integrate Q with dodge skillshots
+--			Add Ignite / Exhaust for each Yayo state
 --
 --		AHRI
 --			Add kill steals
 --			Add spell cast functions like Caitlyn
 --			Add menu
 --			Integrate R with dodge skillshots
+--			Add Ignite / Exhaust for each Yayo state
 --
 --		CASSIOPEIA
 --			Import Deadly Cassio functions
 --			Create menu
+--			Add Ignite / Exhaust for each Yayo state
 --
 --		RIVEN
 --			Add kill steal
@@ -133,6 +144,7 @@ local Version = '2.1.1'
 --			Add menu
 --			Add spellshot / auto shield
 --			Integrate E with dodge skillshots - possibly Q also
+--			Add Ignite / Exhaust for each Yayo state
 --
 --		CAITLYN
 --			Add Safe E anti gap closer
@@ -140,25 +152,30 @@ local Version = '2.1.1'
 --			Manual Q
 --			Champion collision check for ultimate
 --			Integrate E with dodge skillshots
+--			Add Ignite / Exhaust for each Yayo state
 --
 --		RYZE
 --			Add reduced range auto attack option from Deadly Ryze
 --			Add snare combo
+--			Add Ignite / Exhaust for each Yayo state
 --
 --		VAYNE
 --			Auto Interrupt spells with condemn
 --			More detailed anti gap closer with menu options to select which champions to repel
 --			Integrate Q with dodge skillshots
+--			Add Ignite / Exhaust for each Yayo state
 --
 --		TRISTANA
 --			Auto interrupt spells with condemn
 --			Anti gap closer like Vayne - menu to select who to repel
 --			Integrate W with dodge skillshots
 --			Include SafeW to mouse position option of Rocket Jump
+--			Add Ignite / Exhaust for each Yayo state
 --
 --		MISS FORTUNE
 --			Add MEC ultimate
 --			Add Q Bounce
+--			Add Ignite / Exhaust for each Yayo state
 --
 ---------------------------------------------------------------------------------------------------
 -- Required Libs ----------------------------------------------------------------------------------
@@ -181,6 +198,11 @@ local vUsedAt = 0
 local mUsedAt = 0
 local timer = os.clock()
 local bluePill = nil
+
+-------------------------------------------------
+-- KogMaw Variables -----------------------------
+-------------------------------------------------
+local stacks, timer_R = 0, os.time()
 
 ---------------------------------------------------------------------------------------------------
 
@@ -223,7 +245,12 @@ function OnTick()
 		if Simple[myHero.name] and Simple[myHero.name].OnTick then
 			Simple[myHero.name].OnTick(target)
 		end	
-		CCONN_Potions()
+		if CfgYayoBuddy.AutoPotions.AutoPotions_ONOFF then
+			CCONN_Potions()
+		end
+		if CfgYayoBuddy.AutoSummoners.Auto_Summoner_Spells_ONOFF then
+			CCONN_Summoners()
+		end
 	end
 end
 
@@ -2058,6 +2085,379 @@ function MissFortune_R(RTarget)
 end
 
 ---------------------------------------------------------------------------------------------------
+-- KogMaw Section ---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+Simple.KogMaw = {
+	OnTick = function(target)
+		StackReset()
+		local Qrange = CfgYayoBuddy._SpellRanges.qRNG
+		local Wrange = GetWRange()
+		local Erange = CfgYayoBuddy._SpellRanges.eRNG
+		local Rrange = GetRRange()
+		local targetQ = GetWeakEnemy('PHYS', 1150)
+		local targetW = GetWeakEnemy('PHYS', Wrange)
+		local targetE = GetWeakEnemy('PHYS', 1000)
+		local targetR = GetWeakEnemy('PHYS', Rrange)
+-------------------------------------------------
+-- Yayo Auto Carry State ------------------------
+-------------------------------------------------		
+		if yayo.Config.AutoCarry then
+			if targetW and CfgYayoBuddy._AutoCarry.useW then
+				if ValidTarget(targetW, Wrange) then
+					KogMaw_W(targetW)
+				end
+			end
+			if targetE and CfgYayoBuddy._AutoCarry.useE then
+				if ValidTarget(targetE, Erange) then
+					KogMaw_E(targetE)
+				end
+			end
+			if targetR and CfgYayoBuddy._AutoCarry.useR then
+				if ValidTarget(targetR, Rrange) then
+					KogMaw_R(targetR)
+				end
+			end
+			if targetQ and CfgYayoBuddy._AutoCarry.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					KogMaw_Q(targetQ)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Mixed Mode State ------------------------
+-------------------------------------------------
+		if yayo.Config.Mixed then
+			if targetW and CfgYayoBuddy._MixedMode.useW then
+				if ValidTarget(targetW, Wrange) then
+					KogMaw_W(targetW)
+				end
+			end
+			if targetE and CfgYayoBuddy._MixedMode.useE then
+				if ValidTarget(targetE, Erange) then
+					KogMaw_E(targetE)
+				end
+			end
+			if targetR and CfgYayoBuddy._MixedMode.useR then
+				if ValidTarget(targetR, Rrange) then
+					KogMaw_R(targetR)
+				end
+			end
+			if targetQ and CfgYayoBuddy._MixedMode.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					KogMaw_Q(targetQ)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Last Hit State --------------------------
+-------------------------------------------------
+		if yayo.Config.LastHit then
+			if targetW and CfgYayoBuddy._LastHit.useW then
+				if ValidTarget(targetW, Wrange) then
+					KogMaw_W(targetW)
+				end
+			end
+			if targetE and CfgYayoBuddy._LastHit.useE then
+				if ValidTarget(targetE, Erange) then
+					KogMaw_E(targetE)
+				end
+			end
+			if targetR and CfgYayoBuddy._LastHit.useR then
+				if ValidTarget(targetR, Rrange) then
+					KogMaw_R(targetR)
+				end
+			end
+			if targetQ and CfgYayoBuddy._LastHit.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					KogMaw_Q(targetQ)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Lane Clear State ------------------------
+-------------------------------------------------
+		if yayo.Config.LaneClear then
+			if targetW and CfgYayoBuddy._LaneClear.useW then
+				if ValidTarget(targetW, Wrange) then
+					KogMaw_W(targetW)
+				end
+			end
+			if targetE and CfgYayoBuddy._LaneClear.useE then
+				if ValidTarget(targetE, Erange) then
+					KogMaw_E(targetE)
+				end
+			end
+			if targetR and CfgYayoBuddy._LaneClear.useR then
+				if ValidTarget(targetR, Rrange) then
+					KogMaw_R(targetR)
+				end
+			end
+			if targetQ and CfgYayoBuddy._LaneClear.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					KogMaw_Q(targetQ)
+				end
+			end
+		end
+		if CfgYayoBuddy.KillSteal.KillSteal then KogMawKillSteal() end
+	end
+}
+
+-------------------------------------------------
+--KILL STEAL FUNCTIONS---------------------------
+-------------------------------------------------
+function KogMawKillSteal()
+	for i = 1, objManager:GetMaxHeroes()  do
+    	local enemy = objManager:GetHero(i)
+    	if (enemy ~= nil and enemy.team ~= myHero.team and enemy.visible == 1 and enemy.invulnerable == 0 and enemy.dead == 0) then
+			local qdmg = getDmg("Q",enemy,myHero)
+    		local edmg = getDmg("E",enemy,myHero)
+			local rdmg = getDmg("R",enemy,myHero)
+			local ignitedmg = (myHero.selflevel*20)+50
+
+-------------------------------------------------
+-- Q Kill Steal ---------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Q and qdmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 1000 then --Q KS
+				KogMaw_Q(enemy)
+			end
+-------------------------------------------------
+-- E Kill Steal ---------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.E and edmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 1000 then --E KS
+				KogMaw_E(enemy)
+			end
+------------------------------------------------
+-- R Kill Steal --------------------------------
+------------------------------------------------
+			if CfgYayoBuddy.KillSteal.R and rdmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= GetRRange() then --R KS
+				KogMaw_R(enemy)
+			end
+-------------------------------------------------
+-- Ignite Kill Steal ----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Ignite and ignitedmg > enemy.health and GetDistance(myHero,enemy) <= 600 then --Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + E Kill Steal -----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QE and qdmg + edmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 1000 then --Q,E KS
+				KogMaw_Q(enemy)
+				KogMaw_E(enemy)
+			end
+-------------------------------------------------
+-- Q + R Kill Steal -----------------------------
+-------------------------------------------------
+				if CfgYayoBuddy.KillSteal.QR and qdmg + rdmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1000 then --Q,R KS
+					KogMaw_Q(enemy)
+					KogMaw_R(enemy)
+				end
+-------------------------------------------------
+-- Q + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QIgnite and qdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					KogMaw_Q(enemy)
+				end
+			end
+-------------------------------------------------
+-- E + R Kill Steal -----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.ER and edmg + rdmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1000 then --E,R KS --SafeR
+				KogMaw_E(enemy)
+				KogMaw_R(enemy)
+			end
+-------------------------------------------------
+-- E + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.EIgnite and edmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					KogMaw_E(enemy)
+				end
+			end
+-------------------------------------------------
+-- R + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.RIgnite and rdmg + ignitedmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					KogMaw_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + E + R Kill Steal -------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QER and qdmg + edmg + rdmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1000 then --Q,E,R KS
+				KogMaw_Q(enemy)
+				KogMaw_E(enemy)
+				KogMaw_R(enemy)
+			end
+-------------------------------------------------
+-- Q + E + Ignite Kill Steal --------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QEIgnite and qdmg + edmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,E,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					KogMaw_Q(enemy)
+					KogMaw_E(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + R + Ignite Kill Steal --------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QRIgnite and qdmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					KogMaw_Q(enemy)
+					KogMaw_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- E + R + Igite Kill Steal ---------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.ERIgnite and edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					KogMaw_E(enemy)
+					KogMaw_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + E + R + Ignite Kill Steal ----------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.ERIgnite and edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					KogMaw_E(enemy)
+					KogMaw_R(enemy)
+				end
+			end
+		end
+	end
+end
+
+-------------------------------------------------
+-- Calculate W Range ----------------------------
+-------------------------------------------------
+function GetWRange()
+	if myHero.SpellLevelW == 1 then
+		return 630
+	elseif myHero.SpellLevelW == 2 then
+		return 650
+	elseif myHero.SpellLevelW == 3 then
+		return 670
+	elseif myHero.SpellLevelW == 4 then
+		return 690
+	elseif myHero.SpellLevelW == 5 then
+		return 710
+	else
+		return 0
+	end
+end
+
+-------------------------------------------------
+-- Calculate R Range ----------------------------
+-------------------------------------------------
+function GetRRange()
+	if myHero.SpellLevelR == 1 then
+		return 1200
+	elseif myHero.SpellLevelR == 2 then
+		return 1500
+	elseif myHero.SpellLevelR == 3 then
+		return 1800
+	else
+		return 0
+	end
+end
+
+-------------------------------------------------
+-- Registers an R stack -------------------------
+-------------------------------------------------
+function OnProcessSpell(unit, spell)
+	if unit ~= nil and spell ~= nil and unit.charName == myHero.charName and spell.name:lower():find("kogmawlivingartillery") then
+		stacks = stacks + 1
+		timer_R = os.time()
+		print('Stack2', stacks)
+		print('StackCheck', StackCheck())
+		print('RRange', GetRRange())
+	end
+end
+
+-------------------------------------------------
+-- Stack Check ----------------------------------
+-------------------------------------------------
+function StackCheck()
+	if (myHero.SpellLevelR == 1 and stacks < CfgYayoBuddy.UltimateOptions.RStack1)
+	or (myHero.SpellLevelR == 2 and stacks < CfgYayoBuddy.UltimateOptions.RStack2)
+	or (myHero.SpellLevelR == 3 and stacks < CfgYayoBuddy.UltimateOptions.RStack3) then
+		return true
+	end
+end
+
+-------------------------------------------------
+-- Stack Reset ----------------------------------
+-------------------------------------------------
+function StackReset()
+	if os.time() > timer_R + 6.5 then 
+		stacks = 0
+	end
+end
+
+-------------------------------------------------
+-- KogMaw Spell Functions -----------------------
+-------------------------------------------------
+function KogMaw_Q(QTarget)
+	local Qrange, Qwidth, Qspeed, Qdelay = CfgYayoBuddy._SpellRanges.qRNG, 90, 2225, 0.632
+	if QTarget ~= nil then
+		if GetDistance(myHero, QTarget) <= CfgYayoBuddy._SpellRanges.qRNG and myHero.mana >= (40 + (10 * myHero.SpellLevelQ)) then
+			local CastPosition, HitChance, Position = YP:GetLineCastPosition(QTarget, Qdelay, Qwidth, Qrange, Qspeed, myHero, true)
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('Q', x, y, z)
+			end
+		end
+	end
+end
+
+function KogMaw_W(WTarget)
+	if WTarget ~= nil then
+		if GetDistance(myHero, WTarget) <= CfgYayoBuddy._SpellRanges.wRNG and myHero.mana >= (40 + (10 * myHero.SpellLevelW)) then
+				CastSpellTarget('W', myHero)
+		end
+	end
+end
+
+function KogMaw_E(ETarget)
+	local Erange, Ewidth, Espeed, Edelay = CfgYayoBuddy._SpellRanges.eRNG, 80, 800, 0.60
+	if ETarget ~= nil then
+		if GetDistance(myHero, ETarget) <= Erange and myHero.mana >= 90 then
+			local CastPosition, HitChance, Position = YP:GetLineCastPosition(ETarget, Edelay, Ewidth, Erange, Espeed, myHero, false)
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('E', x, y, z)
+			end
+		end
+	end
+end
+
+function KogMaw_R(RTarget)
+	local Rrange, Rwidth, Rspeed, Rdelay = GetRRange(), 100, 1000, 0.25
+	if RTarget ~= nil then
+		if myHero.SpellTimeR > 1.0 and StackCheck() and myHero.mana >= 40 and GetDistance(RTarget) <= Rrange then
+			local CastPosition, HitChance, Position = YP:GetCircularCastPosition(RTarget, Rdelay, Rwidth, Rrange, Rspeed, myHero, false)
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('R', x, y, z)
+			end
+		end
+	end
+end
+
+---------------------------------------------------------------------------------------------------
 -- Auto Potions -----------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
 function CCONN_Potions()
@@ -2118,6 +2518,18 @@ end
 -- Summoner Spells --------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
 
+function CCONN_Summoners()
+	if CfgYayoBuddy.AutoSummoners.Auto_Barrier_ONOFF then
+		SummonerBarrier()
+	end
+	if CfgYayoBuddy.AutoSummoners.Auto_Heal_ONOFF then
+		SummonerHeal()
+	end
+	if CfgYayoBuddy.AutoSummoners.Auto_Clarity_ONOFF then
+		SummonerClarity()
+	end
+end
+
 function SummonerIgniteCombo(TargetIgnite)
 	if TargetIgnite ~= nil then
 		if myHero.SummonerD == 'SummonerDot' then
@@ -2146,27 +2558,29 @@ function SummonerIgnite(TargetIgnite)
 end
 
 function SummonerBarrier()
-	if myHero.SummonerD == 'SummonerBarrier' then
-		if myHero.health < myHero.maxHealth*(CfgYayoBuddy.SummonerSpells.AutoBarrierValue / 100) then
-			CastSpellTarget('D',myHero)
+	if myHero.SummonerD == 'SummonerFlash' then return end
+		if myHero.SummonerD == 'SummonerBarrier' then
+			if myHero.health < myHero.maxHealth*(CfgYayoBuddy.AutoSummoners.AutoBarrierValue / 100) then
+				CastSummonerBarrier()
+			end
 		end
-	end
-	if myHero.SummonerF == 'SummonerBarrier' then
-		if myHero.health < myHero.maxHealth*(CfgYayoBuddy.CaitSummoner.AutoBarrierValue / 100) then
-			CastSpellTarget('F',myHero)
+	if myHero.SummonerF == 'SummonerFlash' then return end
+		if myHero.SummonerF == 'SummonerBarrier' then
+			if myHero.health < myHero.maxHealth*(CfgYayoBuddy.AutoSummoners.AutoBarrierValue / 100) then
+				CastSummonerBarrier()
+			end
 		end
-	end
 end
 
 function SummonerHeal()
 	if myHero.SummonerD == 'SummonerHeal' then
-		if myHero.health < myHero.maxHealth*(CfgYayoBuddy.SummonerSpells.AutoHealValue / 100) then
-			CastSpellTarget('D',myHero)
+		if myHero.health < myHero.maxHealth*(CfgYayoBuddy.AutoSummoners.AutoHealValue / 100) then
+			CastSummonerHeal()
 		end
 	end
 	if myHero.SummonerF == 'SummonerHeal' then
-		if myHero.health < myHero.maxHealth*(CfgYayoBuddy.SummonerSpells.AutoHealValue / 100) then
-			CastSpellTarget('F',myHero)
+		if myHero.health < myHero.maxHealth*(CfgYayoBuddy.AutoSummoners.AutoHealValue / 100) then
+			CastSummonerHeal()
 		end
 	end
 end
@@ -2186,21 +2600,34 @@ function SummonerExhaustCombo(ExhaustTarget)
 	end
 end
 
-function SummonerExhaust()
-	if target ~= nil then
+function SummonerExhaust(ExhaustTarget)
+	if ExhaustTarget ~= nil then
 		if myHero.SummonerD == 'SummonerExhaust' then
 			if myHero.health < myHero.maxHealth*(CfgYayoBuddy.SummonerSpells.AutoExhaustValue / 100) then
-				if myHero.health < target.health then
-					CastSpellTarget('D',target)
+				if myHero.health < ExhaustTarget.health then
+					CastSpellTarget('D',ExhaustTarget)
 				end
 			end
 		end
 		if myHero.SummonerF == 'SummonerExhaust' then
 			if myHero.health < myHero.maxHealth*(CfgYayoBuddy.SummonerSpells.AutoExhaustValue / 100) then
-				if myHero.health < target.health then
-					CastSpellTarget('F',target)
+				if myHero.health < ExhaustTarget.health then
+					CastSpellTarget('F',ExhaustTarget)
 				end
 			end
+		end
+	end
+end
+
+function SummonerClarity()
+	if myHero.SummonerD == 'SummonerMana' then
+		if myHero.mana < myHero.maxMana*(CfgYayoBuddy.AutoSummoners.AutoClarityValue / 100) then
+			CastSummonerClarity()
+		end
+	end
+	if myHero.SummonerF == 'SummonerMana' then
+		if myHero.mana < myHero.maxMana*(CfgYayoBuddy.AutoSummoners.AutoClarityValue / 100) then
+			CastSummonerClarity()
 		end
 	end
 end
@@ -2388,6 +2815,60 @@ if myHero.name == "MissFortune" then
 	submenu.checkbutton('QERIgnite', 'Q + E + R + Ignite', true)
 end
 -------------------------------------------------
+-- KogMaw Sub Menus ----------------------------
+-------------------------------------------------
+if myHero.name == "KogMaw" then
+	local submenu = menu.submenu('_AutoCarry')
+	submenu.checkbutton('useQ', 'Q: Caustic Spittle', true)
+	submenu.checkbutton('useW', 'W: Bio-Arcane Barrage', true)
+	submenu.checkbutton('useE', 'E: Void Ooze', true)
+	submenu.keytoggle('useR', 'R: Living Artillery', Keys.Z, false)
+	local submenu = menu.submenu('_LastHit')
+	submenu.checkbutton('useQ', 'Q: Caustic Spittle', false)
+	submenu.checkbutton('useW', 'W: Bio-Arcane Barrage', false)
+	submenu.checkbutton('useE', 'E: Void Ooze', false)
+	submenu.checkbutton('useR', 'R: Living Artillery', false)
+	local submenu = menu.submenu('_MixedMode')
+	submenu.checkbutton('useQ', 'Q: Caustic Spittle', true)
+	submenu.checkbutton('useW', 'W: Bio-Arcane Barrage', true)
+	submenu.checkbutton('useE', 'E: Void Ooze', true)
+	submenu.checkbutton('useR', 'R: Living Artillery', false)
+	local submenu = menu.submenu('_LaneClear')
+	submenu.checkbutton('useQ', 'Q: Caustic Spittle', true)
+	submenu.checkbutton('useW', 'W: Bio-Arcane Barrage', true)
+	submenu.checkbutton('useE', 'E: Void Ooze', true)
+	submenu.checkbutton('useR', 'R: Living Artillery', false)
+	local submenu = menu.submenu('_SpellRanges')
+	submenu.slider('qRNG', 'Q: Caustic Spittle', 0, 1000, 1000, nil, true)
+	submenu.slider('wRNG', 'W: Bio-Arcane Barrage', 0, 1000, 1000, nil, true)
+	submenu.slider('eRNG', 'E: Void Ooze', 0, 1280, 1000, nil, true)
+	--submenu.slider('rRNG', 'R: Living Artillery', 0, 3000, 3000, nil, true)
+	local submenu = menu.submenu('UltimateOptions')
+	submenu.label('lblkog1', '>> Stack Management <<')
+	submenu.checkbutton('StackCheck', 'Use Stack Check', true)
+	submenu.slider('RStack1', 'Rank 1 max stacks', 1, 10, 2, nil, true)
+	submenu.slider('RStack2', 'Rank 2 max stacks', 1, 10, 3, nil, true)
+	submenu.slider('RStack3', 'Rank 3 max stacks', 1, 10, 4, nil, true)
+	local submenu = menu.submenu('KillSteal')
+	submenu.checkbutton('KillSteal', 'Use Killsteals', true)
+	submenu.checkbutton('Q', 'Q', true)
+	submenu.checkbutton('E', 'E', true)
+	submenu.checkbutton('R', 'R', true)
+	submenu.checkbutton('Ignite', 'Ignite', true)
+	submenu.checkbutton('QE', 'Q + E', true)
+	submenu.checkbutton('QR', 'Q + R', true)
+	submenu.checkbutton('QIgnite', 'Q + Ignite', true)
+	submenu.checkbutton('ER', 'E + R', true)
+	submenu.checkbutton('EIgnite', 'E + Ignite', true)
+	submenu.checkbutton('RIgnite', 'R + Ignite', true)
+	submenu.checkbutton('QER', 'Q + E + R', true)
+	submenu.checkbutton('QEIgnite', 'Q + E + Ignite', true)
+	submenu.checkbutton('QRIgnite', 'Q + R + Ignite', true)
+	submenu.checkbutton('ERIgnite', 'E + R + Ignite', true)
+	submenu.checkbutton('QERIgnite', 'Q + E + R + Ignite', true)
+end
+
+-------------------------------------------------
 -- Tristana Sub Menus ----------------------------
 -------------------------------------------------
 if myHero.name == "Tristana" then
@@ -2464,6 +2945,7 @@ end
 -- Auto Potions Sub Menus -----------------------
 -------------------------------------------------
 	local submenu = menu.submenu('AutoPotions')
+	submenu.checkbutton('AutoPotions_ONOFF', 'Enable Auto Potions', true)
 	submenu.checkbutton('Health_Potion_ONOFF', 'Health Potions', true)
 	submenu.checkbutton('Mana_Potion_ONOFF', 'Mana Potions', true)
 	submenu.checkbutton('Chrystalline_Flask_ONOFF', 'Chrystalline Flask', true)
@@ -2474,6 +2956,26 @@ end
 	submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
 	submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
 	submenu.slider('Biscuit_Value', 'Biscuit Value', 0, 100, 60, nil, true)
+-------------------------------------------------
+-- Auto Summoner Spells Sub Menu ----------------
+-------------------------------------------------
+	local submenu = menu.submenu('AutoSummoners')
+	submenu.checkbutton('Auto_Summoner_Spells_ONOFF', 'Enable Auto Summoner Spells', true)
+	--submenu.checkbutton('Auto_Ignite_COMBO_ONOFF', 'Use Ignite in Combo', true)
+	--submenu.checkbutton('Auto_Exhaust_COMBO_ONOFF', 'Use Exhaust in Combo', true)
+	--submenu.checkbutton('Auto_Exhaust_ONOFF', 'Exhaust', true)
+	submenu.checkbutton('Auto_Barrier_ONOFF', 'Barrier', true)
+	submenu.checkbutton('Auto_Heal_ONOFF', 'Heal', true)
+	submenu.checkbutton('Auto_Clarity_ONOFF', 'Clarity', true)
+	submenu.slider('AutoHealValue', 'Auto Heal Value', 0, 100, 15, nil, true)
+	submenu.slider('AutoBarrierValue', 'Auto Barrier Value', 0, 100, 15, nil, true)
+	--submenu.slider('AutoExhaustValue', 'Auto Exhaust Value', 0, 100, 20, nil, true)
+	submenu.slider('AutoClarityValue', 'Auto Clarity Value', 0, 100, 40, nil, true)
+	--submenu.slider('AutoIgniteComboValue', 'Ignite Combo Value', 0, 100, 40, nil, true)
+	--submenu.slider('AutoExhaustComboValue', 'Exhaust Combo Value', 0, 100, 40, nil, true)
+-------------------------------------------------
+-------------------------------------------------
+-------------------------------------------------
 menu.label('lbl0', ' ')
 menu.label('lbl1', 'CCONNs Yayo Buddy Version '..tostring(Version))
 menu.label('lbl2', 'www.facebook.com/CCONN81')
