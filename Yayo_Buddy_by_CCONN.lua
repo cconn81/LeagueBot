@@ -1,9 +1,17 @@
 local ScriptName = 'CCONNs Yayo Buddy'
-local Version = '2.4'
+local Version = '2.4.1'
+---------------------------------------------------------------------------------------------------
+-- Auto Update information - DO NOT TOUCH ---------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+-- yupdate = Yayo_Buddy_by_CCONN.lua 2.4.1 https://raw.githubusercontent.com/cconn81/LeagueBot/master/Yayo_Buddy_by_CCONN.lua https://raw.githubusercontent.com/cconn81/LeagueBot/master/Version%20Numbers/Yayo_Buddy_Version.lua
+--
+--
 ---------------------------------------------------------------------------------------------------
 -- CHANGE LOG -------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
 --
+--			Version 2.4.1
+--				Added support for Yonder's yupdate auto updater
 --			Version 2.4
 --				Imported Deadly Graves
 --				Imported Deadly Corki
