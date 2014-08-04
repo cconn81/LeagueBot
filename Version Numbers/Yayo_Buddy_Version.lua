@@ -1,1 +1,1 @@
-Yayo_Buddy_by_CCONN.lua 2.4
+Yayo_Buddy_by_CCONN.lua 2.4.1
