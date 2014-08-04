@@ -1,9 +1,12 @@
 local ScriptName = 'CCONNs Yayo Buddy'
-local Version = '2.3'
+local Version = '2.4'
 ---------------------------------------------------------------------------------------------------
 -- CHANGE LOG -------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
 --
+--			Version 2.4
+--				Imported Deadly Graves
+--				Imported Deadly Corki
 --			Version 2.3
 --				Re-work of Teemo
 --					New Menu, Spell Cast functions, Kill Steals, Combo Functions, AA Reset
@@ -68,7 +71,9 @@ local Version = '2.3'
 --		Ahri
 --		Caitlyn
 --		Cassiopeia
+--		Corki
 --		Ezreal
+--		Graves
 --		KogMaw
 --		Master Yi
 --		Miss Fortune
@@ -111,6 +116,7 @@ local Version = '2.3'
 --			Option to disable move to mouse
 --			Add Auto Exhaust on dangerous spells, eg. Katarina Ultimate
 --			Add Auto Ignite on Mundo Ultimate - other spells?
+--			Re-name menu items to avoid settings not being saved for each champion (prefix widget name with 'championname_')
 --
 --		EZREAL
 --			Add Kill Steals
@@ -180,6 +186,13 @@ local Version = '2.3'
 --			Add MEC ultimate
 --			Add Q Bounce
 --			Add Ignite / Exhaust for each Yayo state
+--
+--		Graves
+--			Option to smoke screen to mouse position
+--			Integrate quickdraw with dodge skillshots
+--
+--		Corki
+--			Integrate Valkyrie with dodge skillshots
 --
 ---------------------------------------------------------------------------------------------------
 -- Required Libs ----------------------------------------------------------------------------------
@@ -874,6 +887,246 @@ function EQCombo(EQTarget)
 	end
 end
 ]]
+
+---------------------------------------------------------------------------------------------------
+-- Graves Section ---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+Simple.Graves = {
+	OnTick = function(target)
+		local Qrange = CfgYayoBuddy._SpellRanges.qRNG
+		local Wrange = CfgYayoBuddy._SpellRanges.wRNG
+		local Erange = CfgYayoBuddy._SpellRanges.eRNG
+		local Rrange = CfgYayoBuddy._SpellRanges.rRNG
+		local targetQ = GetWeakEnemy('PHYS', 950)
+		local targetW = GetWeakEnemy('PHYS', 950)
+		local targetE = GetWeakEnemy('PHYS', 950)
+		local targetR = GetWeakEnemy('PHYS', Rrange)
+-------------------------------------------------
+-- Yayo Auto Carry State ------------------------
+-------------------------------------------------		
+		if yayo.Config.AutoCarry then
+			if targetW and CfgYayoBuddy._AutoCarry.useW then
+				if ValidTarget(targetW, Wrange) then
+					Graves_W(targetW)
+				end
+			end
+			if targetE and CfgYayoBuddy._AutoCarry.useE then
+				if ValidTarget(targetE, Erange) then
+					Graves_E(targetE)
+				end
+			end
+			if targetQ and CfgYayoBuddy._AutoCarry.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					Graves_Q(targetQ)
+				end
+			end
+			if targetR and CfgYayoBuddy._AutoCarry.useR then
+				if ValidTarget(targetR, Rrange) then
+					Graves_R(targetR)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Mixed Mode State ------------------------
+-------------------------------------------------
+		if yayo.Config.Mixed then
+			if targetE and CfgYayoBuddy._MixedMode.useE then
+				if ValidTarget(targetE, Erange) then
+					Graves_E(targetE)
+				end
+			end
+			if targetQ and CfgYayoBuddy._MixedMode.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					Graves_Q(targetQ)
+				end
+			end
+			if targetW and CfgYayoBuddy._MixedMode.useW then
+				if ValidTarget(targetW, Wrange) then
+					Graves_W(targetW)
+				end
+			end
+			if targetR and CfgYayoBuddy._MixedMode.useR then
+				if ValidTarget(targetR, Rrange) then
+					Caitlyn_R(targetR)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Last Hit State --------------------------
+-------------------------------------------------
+		if yayo.Config.LastHit then
+			if targetE and CfgYayoBuddy._LastHit.useE then
+				if ValidTarget(targetE, Erange) then
+					Graves_E(targetE)
+				end
+			end
+			if targetQ and CfgYayoBuddy._LastHit.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					Graves_Q(targetQ)
+				end
+			end
+			if targetW and CfgYayoBuddy._LastHit.useW then
+				if ValidTarget(targetW, Wrange) then
+					Graves_W(targetW)
+				end
+			end
+			if targetR and CfgYayoBuddy._LastHit.useR then
+				if ValidTarget(targetR, Rrange) then
+					Graves_R(targetR)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Lane Clear State ------------------------
+-------------------------------------------------
+		if yayo.Config.LaneClear then
+			if targetE and CfgYayoBuddy._LaneClear.useE then
+				if ValidTarget(targetE, Erange) then
+					Graves_E(targetE)
+				end
+			end
+			if targetQ and CfgYayoBuddy._LaneClear.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					Graves_Q(targetQ)
+				end
+			end
+			if targetW and CfgYayoBuddy._LaneClear.useW then
+				if ValidTarget(targetW, Wrange) then
+					Graves_W(targetW)
+				end
+			end
+			if targetR and CfgYayoBuddy._LaneClear.useR then
+				if ValidTarget(targetR, Rrange) then
+					Graves_R(targetR)
+				end
+			end
+		end
+		if CfgYayoBuddy.KillSteal.KillSteal then GravesKillSteal() end
+	end
+}
+
+-------------------------------------------------
+--KILL STEAL FUNCTIONS---------------------------
+-------------------------------------------------
+function GravesKillSteal() --15 KS Combinations
+	for i = 1, objManager:GetMaxHeroes()  do
+    	local enemy = objManager:GetHero(i)
+    	if (enemy ~= nil and enemy.team ~= myHero.team and enemy.visible == 1 and enemy.invulnerable == 0 and enemy.dead == 0) then
+			local qdmg = getDmg("Q",enemy,myHero)
+			local wdmg = getDmg("W",enemy,myHero)
+    		local edmg = getDmg("E",enemy,myHero)
+			local rdmg = getDmg("R",enemy,myHero)
+			local ignitedmg = (myHero.selflevel*20)+50
+
+-------------------------------------------------
+-- Q Kill Steal ---------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Q and qdmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 950 then --Q KS
+				Graves_Q(enemy)
+			end
+------------------------------------------------
+-- R Kill Steal --------------------------------
+------------------------------------------------
+			if CfgYayoBuddy.KillSteal.R and rdmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1000 then --R KS
+				Graves_R(enemy)
+			end
+-------------------------------------------------
+-- Ignite Kill Steal ----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Ignite and ignitedmg > enemy.health and GetDistance(myHero,enemy) <= 600 then --Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + R Kill Steal -----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QR and qdmg + rdmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 950 then --Q,R KS
+				Graves_Q(enemy)
+				Graves_R(enemy)
+			end
+-------------------------------------------------
+-- Q + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QIgnite and qdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Graves_Q(enemy)
+				end
+			end
+-------------------------------------------------
+-- R + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.RIgnite and rdmg + ignitedmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Graves_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + R + Ignite Kill Steal --------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QRIgnite and qdmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Graves_Q(enemy)
+					Graves_R(enemy)
+				end
+			end
+		end
+	end
+end
+
+-------------------------------------------------
+-- Caitlyn Spell Functions ----------------------
+-------------------------------------------------
+function Graves_Q(QTarget)
+	local Qrange, Qwidth, Qspeed, Qdelay = CfgYayoBuddy._SpellRanges.qRNG, 100, 902, 0.5
+	if QTarget ~= nil then
+		if GetDistance(myHero, QTarget) <= CfgYayoBuddy._SpellRanges.qRNG and myHero.mana >= (50 + (10 * myHero.SpellLevelQ)) then
+			local CastPosition, HitChance, Position = YP:GetLineCastPosition(QTarget, Qdelay, Qwidth, Qrange, Qspeed, myHero, false) --use linecast until find the angle of Q
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('Q', x, y, z)
+			end
+		end
+	end
+end
+
+function Graves_W(WTarget)
+	local Wrange, Wwidth, Wspeed, Wdelay = CfgYayoBuddy._SpellRanges.wRNG, 250, 1650, 0.5
+	if WTarget ~= nil then
+		if GetDistance(myHero, WTarget) <= CfgYayoBuddy._SpellRanges.wRNG and myHero.mana >= (65 + (10 * myHero.SpellLevelW)) then
+			local CastPosition, HitChance, Position = YP:GetCircularCastPosition(WTarget, Wdelay, Wwidth, Wrange, Wspeed, myHero, false)
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('W', x, y, z)
+			end
+		end
+	end
+end
+
+function Graves_E(ETarget)
+	if ETarget ~= nil then
+		if GetDistance(myHero, ETarget) <= 950 and myHero.mana >= 40 then
+			CastSpellXYZ('E', mousePos.x, mousePos.y, mousePos.z)
+		end
+	end
+end
+
+function Graves_R(RTarget)
+	local Rrange, Rwidth, Rspeed, Rdelay = CfgYayoBuddy._SpellRanges.rRNG, 100, 1400, 0.5
+	if RTarget ~= nil then
+		if GetDistance(myHero, RTarget) <= CfgYayoBuddy._SpellRanges.rRNG and myHero.mana >= 100 then
+			local CastPosition, HitChance, Position = YP:GetLineCastPosition(RTarget, Rdelay, Rwidth, Rrange, Rspeed, myHero, false)
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('R', x, y, z)
+			end
+		end
+	end
+end
+
 ---------------------------------------------------------------------------------------------------
 -- Tristana Section -------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
@@ -2847,6 +3100,283 @@ function CountUnit(Center,Radius)
 end
 
 ---------------------------------------------------------------------------------------------------
+-- Caitlyn Section --------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+Simple.Corki = {
+	OnTick = function(target)
+		local Qrange = CfgYayoBuddy._SpellRanges.qRNG
+		local Erange = CfgYayoBuddy._SpellRanges.eRNG
+		local Rrange = CfgYayoBuddy._SpellRanges.rRNG
+		local targetQ = GetWeakEnemy('PHYS', 825)
+		local targetW = GetWeakEnemy('PHYS', 800)
+		local targetE = GetWeakEnemy('PHYS', 600)
+		local targetR = GetWeakEnemy('PHYS', 1225)
+-------------------------------------------------
+-- Yayo Auto Carry State ------------------------
+-------------------------------------------------		
+		if yayo.Config.AutoCarry then
+			if targetQ and CfgYayoBuddy._AutoCarry.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					Corki_Q(targetQ)
+				end
+			end
+			if targetE and CfgYayoBuddy._AutoCarry.useE then
+				if ValidTarget(targetE, Erange) then
+					Corki_E(targetE)
+				end
+			end
+			if targetR and CfgYayoBuddy._AutoCarry.useR then
+				if ValidTarget(targetR, Rrange) then
+					Corki_R(targetR)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Mixed Mode State ------------------------
+-------------------------------------------------
+		if yayo.Config.Mixed then
+			if targetQ and CfgYayoBuddy._MixedMode.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					Corki_Q(targetQ)
+				end
+			end
+			if targetE and CfgYayoBuddy._MixedMode.useE then
+				if ValidTarget(targetE, Erange) then
+					Corki_E(targetE)
+				end
+			end
+			if targetR and CfgYayoBuddy._MixedMode.useR then
+				if ValidTarget(targetR, Rrange) then
+					Corki_R(targetR)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Last Hit State --------------------------
+-------------------------------------------------
+		if yayo.Config.LastHit then
+			if targetQ and CfgYayoBuddy._LastHit.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					Corki_Q(targetQ)
+				end
+			end
+			if targetE and CfgYayoBuddy._LastHit.useE then
+				if ValidTarget(targetE, Erange) then
+					Corki_E(targetE)
+				end
+			end
+			if targetR and CfgYayoBuddy._LastHit.useR then
+				if ValidTarget(targetR, Rrange) then
+					Corki_R(targetR)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Lane Clear State ------------------------
+-------------------------------------------------
+		if yayo.Config.LaneClear then
+			if targetQ and CfgYayoBuddy._LaneClear.useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange then
+					Corki_Q(targetQ)
+				end
+			end
+			if targetE and CfgYayoBuddy._LaneClear.useE then
+				if ValidTarget(targetE, Erange) then
+					Corki_E(targetE)
+				end
+			end
+			if targetR and CfgYayoBuddy._LaneClear.useR then
+				if ValidTarget(targetR, Rrange) then
+					Corki_R(targetR)
+				end
+			end
+		end
+		if CfgYayoBuddy.KillSteal.KillSteal then CorkiKillSteal() end
+	end
+}
+
+-------------------------------------------------
+--KILL STEAL FUNCTIONS---------------------------
+-------------------------------------------------
+function CorkiKillSteal() --15 KS Combinations
+	for i = 1, objManager:GetMaxHeroes()  do
+    	local enemy = objManager:GetHero(i)
+    	if (enemy ~= nil and enemy.team ~= myHero.team and enemy.visible == 1 and enemy.invulnerable == 0 and enemy.dead == 0) then
+			local qdmg = getDmg("Q",enemy,myHero)
+			--local wdmg = getDmg("W",enemy,myHero)
+    		local edmg = getDmg("E",enemy,myHero)
+			local rdmg = getDmg("R",enemy,myHero)
+			local ignitedmg = (myHero.selflevel*20)+50
+
+-------------------------------------------------
+-- Q Kill Steal ---------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Q and qdmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 825 then --Q KS
+				Corki_Q(enemy)
+			end
+-------------------------------------------------
+-- E Kill Steal --------------------------------- Disabled all E related kill steals - don't like how they feel. Leaving code for future testing.
+-------------------------------------------------
+--			if CfgYayoBuddy.KillSteal.E and edmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 600 then --E KS
+--				Corki_E(enemy)
+--			end
+------------------------------------------------
+-- R Kill Steal --------------------------------
+------------------------------------------------
+			if CfgYayoBuddy.KillSteal.R and rdmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 1225 then --R KS
+				Corki_R(enemy)
+			end
+-------------------------------------------------
+-- Ignite Kill Steal ----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Ignite and ignitedmg > enemy.health and GetDistance(myHero,enemy) <= 600 then --Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + E Kill Steal -----------------------------
+-------------------------------------------------
+--			if CfgYayoBuddy.KillSteal.QE and qdmg + edmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,E KS
+--				Corki_Q(enemy)
+--				Corki_E(enemy)
+--			end
+-------------------------------------------------
+-- Q + R Kill Steal -----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QR and qdmg + rdmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 825 then --Q,R KS
+				Corki_Q(enemy)
+				Corki_R(enemy)
+			end
+-------------------------------------------------
+-- Q + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QIgnite and qdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Corki_Q(enemy)
+				end
+			end
+-------------------------------------------------
+-- E + R Kill Steal -----------------------------
+-------------------------------------------------
+--			if CfgYayoBuddy.KillSteal.ER and edmg + rdmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,R KS --SafeR
+--				Corki_E(enemy)
+--				Corki_R(enemy)
+--			end
+-------------------------------------------------
+-- E + Ignite Kill Steal ------------------------
+-------------------------------------------------
+--			if CfgYayoBuddy.KillSteal.EIgnite and edmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,Ignite KS
+--				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+--					SummonerIgnite(enemy)
+--					Corki_E(enemy)
+--				end
+--			end
+-------------------------------------------------
+-- R + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.RIgnite and rdmg + ignitedmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Corki_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + E + R Kill Steal -------------------------
+-------------------------------------------------
+--				if CfgYayoBuddy.KillSteal.QER and qdmg + edmg + rdmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,E,R KS
+--					Corki_Q(enemy)
+--					Corki_E(enemy)
+--					Corki_R(enemy)
+--				end
+-------------------------------------------------
+-- Q + E + Ignite Kill Steal --------------------
+-------------------------------------------------
+--			if CfgYayoBuddy.KillSteal.QEIgnite and qdmg + edmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,E,Ignite KS
+--				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+--					SummonerIgnite(enemy)
+--					Corki_Q(enemy)
+--					Corki_E(enemy)
+--				end
+--			end
+-------------------------------------------------
+-- Q + R + Ignite Kill Steal --------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.QRIgnite and qdmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Corki_Q(enemy)
+					Corki_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- E + R + Igite Kill Steal ---------------------
+-------------------------------------------------
+--			if CfgYayoBuddy.KillSteal.ERIgnite and edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,R,Ignite KS
+--				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+--					SummonerIgnite(enemy)
+--					Corki_E(enemy)
+--					Corki_R(enemy)
+--				end
+--			end
+-------------------------------------------------
+-- Q + E + R + Ignite Kill Steal ----------------
+-------------------------------------------------
+--			if CfgYayoBuddy.KillSteal.ERIgnite and edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --E,R,Ignite KS
+--				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+--					SummonerIgnite(enemy)
+--					Caitlyn_E(enemy)
+--					Caitlyn_R(enemy)
+--				end
+--			end
+		end
+	end
+end
+
+-------------------------------------------------
+-- Caitlyn Spell Functions ----------------------
+-------------------------------------------------
+function Corki_Q(QTarget)
+	local Qrange, Qwidth, Qspeed, Qdelay = CfgYayoBuddy._SpellRanges.qRNG, 250, 850, 0.5
+	if QTarget ~= nil then
+		if GetDistance(myHero, QTarget) <= CfgYayoBuddy._SpellRanges.qRNG and myHero.mana >= (50 + (10 * myHero.SpellLevelQ)) then
+			local CastPosition, HitChance, Position = YP:GetCircularCastPosition(QTarget, Qdelay, Qwidth, Qrange, Qspeed, myHero, false)
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('Q', x, y, z)
+			end
+		end
+	end
+end
+
+function Corki_E(ETarget)
+	local Erange, Ewidth, Espeed, Edelay = CfgYayoBuddy._SpellRanges.eRNG, 100, 902, 0.5
+	if ETarget ~= nil then
+		if GetDistance(myHero, ETarget) <= 1000 and myHero.mana >= 50 then
+			local CastPosition, HitChance, Position = YP:GetConeAOECastPosition(ETarget, Edelay, 35, Erange, Espeed, myHero, false)
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('E', x, y, z)
+			end
+		end
+	end
+end
+
+function Corki_R(RTarget)
+	local Rrange, Rwidth, Rspeed, Rdelay = CfgYayoBuddy._SpellRanges.rRNG, 80, 828, 0.5
+	if RTarget ~= nil then
+		if GetDistance(myHero, RTarget) <= CfgYayoBuddy._SpellRanges.rRNG and myHero.mana >= 20 then
+			local CastPosition, HitChance, Position = YP:GetLineCastPosition(RTarget, Rdelay, Rwidth, Rrange, Rspeed, myHero, true)
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('R', x, y, z)
+			end
+		end
+	end
+end
+
+---------------------------------------------------------------------------------------------------
 -- Menu Items -------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
 CfgYayoBuddy, menu = uiconfig.add_menu("CCONN's Yayo Buddy", 200)
@@ -2961,6 +3491,92 @@ if myHero.name == "Caitlyn" then
 	submenu.checkbutton('QRIgnite', 'Q + R + Ignite', true)
 	submenu.checkbutton('ERIgnite', 'E + R + Ignite', true)
 	submenu.checkbutton('QERIgnite', 'Q + E + R + Ignite', true)
+end
+-------------------------------------------------
+-- Corki Sub Menus ----------------------------
+-------------------------------------------------
+if myHero.name == "Corki" then
+	local submenu = menu.submenu('_AutoCarry')
+	submenu.checkbutton('useQ', 'Q: Phosphorous Bomb', true)
+	--submenu.checkbutton('useW', 'W: Valkyrie', true)
+	submenu.checkbutton('useE', 'E: Gatling Gun', true)
+	submenu.keytoggle('useR', 'R: Missile Barrage', Keys.Z, false)
+	local submenu = menu.submenu('_LastHit')
+	submenu.checkbutton('useQ', 'Q: Phosphorous Bomb', false)
+	--submenu.checkbutton('useW', 'W: Valyrie', true)
+	submenu.checkbutton('useE', 'E: Gatling Gun', false)
+	submenu.checkbutton('useR', 'R: Missile Barrage', false)
+	local submenu = menu.submenu('_MixedMode')
+	submenu.checkbutton('useQ', 'Q: Phosphorous Bomb', true)
+	--submenu.checkbutton('useW', 'W: Valkyrie', true)
+	submenu.checkbutton('useE', 'E: Gatling Gun', false)
+	submenu.checkbutton('useR', 'R: Missile Barrage', true)
+	local submenu = menu.submenu('_LaneClear')
+	submenu.checkbutton('useQ', 'Q: Phosphorous Bomb', true)
+	--submenu.checkbutton('useW', 'W: Valkyrie', true)
+	submenu.checkbutton('useE', 'E: Gatling Gun', true)
+	submenu.checkbutton('useR', 'R: Missile Barrage', false)
+	local submenu = menu.submenu('_SpellRanges')
+	submenu.slider('qRNG', 'Q: Phosphorous Bomb', 0, 825, 825, nil, true)
+	--submenu.slider('wRNG', 'W: Valkyrie', 0, 800, 800, nil, true)
+	submenu.slider('eRNG', 'E: Gatling Gun', 0, 600, 600, nil, true)
+	submenu.slider('rRNG', 'R: Missile Barrage', 0, 1225, 1225, nil, true)
+	local submenu = menu.submenu('KillSteal')
+	submenu.checkbutton('KillSteal', 'Use Killsteals', true)
+	submenu.checkbutton('Q', 'Q', true)
+	--submenu.checkbutton('E', 'E', true)
+	submenu.checkbutton('R', 'R', true)
+	submenu.checkbutton('Ignite', 'Ignite', true)
+	--submenu.checkbutton('QE', 'Q + E', true)
+	submenu.checkbutton('QR', 'Q + R', true)
+	submenu.checkbutton('QIgnite', 'Q + Ignite', true)
+	--submenu.checkbutton('ER', 'E + R', true)
+	--submenu.checkbutton('EIgnite', 'E + Ignite', true)
+	submenu.checkbutton('RIgnite', 'R + Ignite', true)
+	--submenu.checkbutton('QER', 'Q + E + R', true)
+	--submenu.checkbutton('QEIgnite', 'Q + E + Ignite', true)
+	submenu.checkbutton('QRIgnite', 'Q + R + Ignite', true)
+	--submenu.checkbutton('ERIgnite', 'E + R + Ignite', true)
+	--submenu.checkbutton('QERIgnite', 'Q + E + R + Ignite', true)
+end
+-------------------------------------------------
+-- Graves Sub Menus -----------------------------
+-------------------------------------------------
+if myHero.name == "Graves" then
+	local submenu = menu.submenu('_AutoCarry')
+	submenu.checkbutton('useQ', 'Q: Buckshot', true)
+	submenu.checkbutton('useW', 'W: Smoke Screen', true)
+	submenu.checkbutton('useE', 'E: Quickdraw', true)
+	submenu.keytoggle('useR', 'R: Collateral Damage', Keys.Z, false)
+	local submenu = menu.submenu('_LastHit')
+	submenu.checkbutton('useQ', 'Q: Buckshot', false)
+	submenu.checkbutton('useW', 'W: Smoke Screen', false)
+	submenu.checkbutton('useE', 'E: Quickdraw', false)
+	submenu.checkbutton('useR', 'R: Collateral Damage', false)
+	local submenu = menu.submenu('_MixedMode')
+	submenu.checkbutton('useQ', 'Q: Buckshot', true)
+	submenu.checkbutton('useW', 'W: Smoke Screen', false)
+	submenu.checkbutton('useE', 'E: Quickdraw', false)
+	submenu.checkbutton('useR', 'R: Collateral Damage', false)
+	local submenu = menu.submenu('_LaneClear')
+	submenu.checkbutton('useQ', 'Q: Buckshot', true)
+	submenu.checkbutton('useW', 'W: Smoke Screen', false)
+	submenu.checkbutton('useE', 'E: Quickdraw', false)
+	submenu.checkbutton('useR', 'R: Collateral Damage', false)
+	local submenu = menu.submenu('_SpellRanges')
+	submenu.slider('qRNG', 'Q: Buckshot', 0, 950, 950, nil, true)
+	submenu.slider('wRNG', 'W: Smoke Screen', 0, 950, 950, nil, true)
+	submenu.slider('eRNG', 'E: Quickdraw', 0, 950, 950, nil, true)
+	submenu.slider('rRNG', 'R: Collateral Damage', 0, 1000, 1000, nil, true)
+	local submenu = menu.submenu('KillSteal')
+	submenu.checkbutton('KillSteal', 'Use Killsteals', true)
+	submenu.checkbutton('Q', 'Q', true)
+	submenu.checkbutton('R', 'R', true)
+	submenu.checkbutton('Ignite', 'Ignite', true)
+	submenu.checkbutton('QR', 'Q + R', true)
+	submenu.checkbutton('QIgnite', 'Q + Ignite', true)
+	submenu.checkbutton('RIgnite', 'R + Ignite', true)
+	submenu.checkbutton('QRIgnite', 'Q + R + Ignite', true)
 end
 -------------------------------------------------
 -- Miss Fortune Sub Menus -----------------------
