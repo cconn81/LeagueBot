@@ -1,15 +1,22 @@
 local ScriptName = 'CCONNs Yayo Buddy'
-local Version = '2.4.1'
+local Version = '2.5'
 ---------------------------------------------------------------------------------------------------
 -- Auto Update information - DO NOT TOUCH ---------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
--- yupdate = Yayo_Buddy_by_CCONN.lua 2.4.1 https://raw.githubusercontent.com/cconn81/LeagueBot/master/Yayo_Buddy_by_CCONN.lua https://raw.githubusercontent.com/cconn81/LeagueBot/master/Version%20Numbers/Yayo_Buddy_Version.lua
+-- yupdate = Yayo_Buddy_by_CCONN.lua 2.5 https://raw.githubusercontent.com/cconn81/LeagueBot/master/Yayo_Buddy_by_CCONN.lua https://raw.githubusercontent.com/cconn81/LeagueBot/master/Version%20Numbers/Yayo_Buddy_Version.lua
 --
 --
 ---------------------------------------------------------------------------------------------------
 -- CHANGE LOG -------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
 --
+--			Version 2.5
+--				Imported Deadly Talon - an old un-released script
+--				Ported my Deadly Sivir from BoL
+--				Added modified spellshot for spellshield
+--				Added spell farming for Ryze - simple for now, no options and can't toggle off
+--				Added range reduction for Ryze (testing)
+--				Sivir / Talon menu naming convention changed so their settings will save (all others will be update soon)
 --			Version 2.4.1
 --				Added support for Yonder's yupdate auto updater
 --			Version 2.4
@@ -126,6 +133,9 @@ local Version = '2.4.1'
 --			Add Auto Ignite on Mundo Ultimate - other spells?
 --			Re-name menu items to avoid settings not being saved for each champion (prefix widget name with 'championname_')
 --
+--		SPELLSHOT
+--			Review table and update for all champions
+--
 --		EZREAL
 --			Add Kill Steals
 --			Add spell cast functions like Caitlyn
@@ -225,6 +235,14 @@ local timer = os.clock()
 local bluePill = nil
 
 -------------------------------------------------
+-- SPELL SHOT -----------------------------------
+-------------------------------------------------
+local spellShot = {shot = false, radius = 0, time = 0, shotX = 0, shotZ = 0, shotY = 0, safeX = 0, safeY = 0, safeZ = 0, isline = false}
+local startPos = {x=0, y=0, z=0}
+local endPos = {x=0, y=0, z=0}
+local shotMe = false
+
+-------------------------------------------------
 -- KogMaw Variables -----------------------------
 -------------------------------------------------
 local stacks, timer_R = 0, os.time()
@@ -285,6 +303,10 @@ function Init()
 	yayo.RegisterBeforeAttackCallback(BeforeAttack)
 	yayo.RegisterOnAttackCallback(OnAttack)
 	yayo.RegisterAfterAttackCallback(AfterAttack)
+	print('SpellQ', myHero.SpellNameQ)
+	print('SpellW', myHero.SpellNameW)
+	print('SpellE', myHero.SpellNameE)
+	print('SpellR', myHero.SpellNameR)
 end
 ---------------------------------------------------------------------------------------------------
 -- Ezreal Section ---------------------------------------------------------------------------------
@@ -895,6 +917,462 @@ function EQCombo(EQTarget)
 	end
 end
 ]]
+
+---------------------------------------------------------------------------------------------------
+-- Talon Section ----------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+Simple.Talon = {
+	OnTick = function(target)
+		local Wrange = CfgYayoBuddy._SpellRanges.Talon_wRNG
+		local Erange = CfgYayoBuddy._SpellRanges.Talon_eRNG
+		local Rrange = CfgYayoBuddy._SpellRanges.Talon_rRNG
+		local targetW = GetWeakEnemy('PHYS', 600)
+		local targetE = GetWeakEnemy('PHYS', 700)
+		local targetR = GetWeakEnemy('PHYS', 500)
+-------------------------------------------------
+-- Yayo Auto Carry State ------------------------
+-------------------------------------------------		
+		if yayo.Config.AutoCarry then
+			if targetE and CfgYayoBuddy._AutoCarry.Talon_useE then
+				if ValidTarget(targetE, Erange) then
+					Talon_E(targetE)
+				end
+			end
+			if targetW and CfgYayoBuddy._AutoCarry.Talon_useW then
+				if ValidTarget(targetW, Wrange) then
+					Talon_W(targetW)
+				end
+			end
+			if targetR and CfgYayoBuddy._AutoCarry.Talon_useR then
+				if ValidTarget(targetR, Rrange) then
+					Talon_R(targetR)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Mixed Mode State ------------------------
+-------------------------------------------------
+		if yayo.Config.Mixed then
+			if targetE and CfgYayoBuddy._MixedMode.Talon_useE then
+				if ValidTarget(targetE, Erange) then
+					Talon_E(targetE)
+				end
+			end
+			if targetW and CfgYayoBuddy._MixedMode.Talon_useW then
+				if ValidTarget(targetW, Wrange) then
+					Talon_W(targetW)
+				end
+			end
+			if targetR and CfgYayoBuddy._MixedMode.Talon_useR then
+				if ValidTarget(targetR, Rrange) then
+					Talon_R(targetR)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Last Hit State --------------------------
+-------------------------------------------------
+		if yayo.Config.LastHit then
+			if targetE and CfgYayoBuddy._LastHit.Talon_useE then
+				if ValidTarget(targetE, Erange) then
+					Talon_E(targetE)
+				end
+			end
+			if targetW and CfgYayoBuddy._LastHit.Talon_useW then
+				if ValidTarget(targetW, Wrange) then
+					Talon_W(targetW)
+				end
+			end
+			if targetR and CfgYayoBuddy._LastHit.Talon_useR then
+				if ValidTarget(targetR, Rrange) then
+					Talon_R(targetR)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Lane Clear State ------------------------
+-------------------------------------------------
+		if yayo.Config.LaneClear then
+			if targetE and CfgYayoBuddy._LaneClear.Talon_useE then
+				if ValidTarget(targetE, Erange) then
+					Talon_E(targetE)
+				end
+			end
+			if targetW and CfgYayoBuddy._LaneClear.Talon_useW then
+				if ValidTarget(targetW, Wrange) then
+					Talon_W(targetW)
+				end
+			end
+			if targetR and CfgYayoBuddy._LaneClear.Talon_useR then
+				if ValidTarget(targetR, Rrange) then
+					Talon_R(targetR)
+				end
+			end
+		end
+		if CfgYayoBuddy.KillSteal.Talon_KillSteal then TalonKillSteal() end
+	end,
+-------------------------------------------------
+-- Attack Reset with Q --------------------------
+-------------------------------------------------
+	AfterAttack = function(target)
+-------------------------------------------------
+-- Yayo AutoCarry State -------------------------
+-------------------------------------------------
+		if CfgYayoBuddy._AutoCarry.Talon_useQ and yayo.Config.AutoCarry then
+			if target then
+				if ValidTarget(target, myHero.range) and IsHero(target) then
+					Talon_Q(target)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Mixed Mode State ------------------------
+-------------------------------------------------
+		if CfgYayoBuddy._MixedMode.Talon_useQ and yayo.Config.Mixed then
+			if target then
+				if ValidTarget(target, myHero.range) and IsHero(target) then
+					Talon_Q(target)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo LastHit State ---------------------------
+-------------------------------------------------
+		if CfgYayoBuddy._LastHit.Talon_useQ and yayo.Config.LastHit then
+			if target then
+				if ValidTarget(target, myHero.range) and IsHero(target) then
+					Talon_Q(target)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo LaneClear State -------------------------
+-------------------------------------------------
+		if CfgYayoBuddy._LaneClear.Talon_useQ and yayo.Config.LaneClear then
+			if target then
+				if ValidTarget(target, myHero.range) and IsHero(target) then
+					Talon_Q(target)
+				end
+			end
+		end
+	end
+}
+
+-------------------------------------------------
+--KILL STEAL FUNCTIONS---------------------------
+-------------------------------------------------
+function TalonKillSteal() --15 KS Combinations
+	for i = 1, objManager:GetMaxHeroes()  do
+    	local enemy = objManager:GetHero(i)
+    	if (enemy ~= nil and enemy.team ~= myHero.team and enemy.visible == 1 and enemy.invulnerable == 0 and enemy.dead == 0) then
+			--local qdmg = getDmg("Q",enemy,myHero)
+			local wdmg = getDmg("W",enemy,myHero)
+    		local edmg = getDmg("E",enemy,myHero)
+			local rdmg = getDmg("R",enemy,myHero)
+			local ignitedmg = (myHero.selflevel*20)+50
+
+-------------------------------------------------
+-- W Kill Steal ---------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_W and wdmg > enemy.health and myHero.SpellTimeW > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q KS
+				Talon_Q(enemy)
+			end
+-------------------------------------------------
+-- E Kill Steal ---------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_E and edmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 1000 then --E KS
+				Talon_E(enemy)
+			end
+------------------------------------------------
+-- R Kill Steal --------------------------------
+------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_R and rdmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 500 then --R KS
+				Talon_R(enemy)
+			end
+-------------------------------------------------
+-- Ignite Kill Steal ----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_Ignite and ignitedmg > enemy.health and GetDistance(myHero,enemy) <= 600 then --Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+				end
+			end
+-------------------------------------------------
+-- W + E Kill Steal -----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_WE and wdmg + edmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 700 then --Q,E KS
+				Talon_E(enemy)
+				Talon_Q(enemy)
+			end
+-------------------------------------------------
+-- W + R Kill Steal -----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_WR and wdmg + rdmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,R KS
+				Talon_Q(enemy)
+				Talon_R(enemy)
+			end
+-------------------------------------------------
+-- Q + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_WIgnite and wdmg + ignitedmg > enemy.health and myHero.SpellTimeW > 1.0 and GetDistance(myHero,enemy) <= 600 then --W,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Talon_Q(enemy)
+				end
+			end
+-------------------------------------------------
+-- E + R Kill Steal -----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_ER and edmg + rdmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 700 then --E,R KS
+				Talon_E(enemy)
+				Talon_R(enemy)
+			end
+-------------------------------------------------
+-- E + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_EIgnite and edmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 700 then --E,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					Talon_E(enemy)
+					SummonerIgnite(enemy)
+				end
+			end
+-------------------------------------------------
+-- R + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_RIgnite and rdmg + ignitedmg > enemy.health and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Talon_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- W + E + R Kill Steal -------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_WER and wdmg + edmg + rdmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 700 then --Q,E,R KS
+				Talon_E(enemy)
+				Talon_W(enemy)
+				Talon_R(enemy)
+			end
+-------------------------------------------------
+-- W + E + Ignite Kill Steal --------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_WEIgnite and wdmg + edmg + ignitedmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeE > 1.0 and GetDistance(myHero,enemy) <= 700 then --Q,E,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					Talon_E(enemy)
+					SummonerIgnite(enemy)
+					Talon_W(enemy)
+				end
+			end
+-------------------------------------------------
+-- W + R + Ignite Kill Steal --------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_WRIgnite and wdmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeW > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Talon_W(enemy)
+					Talon_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- E + R + Igite Kill Steal ---------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_ERIgnite and edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 700 then --E,R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					Talon_E(enemy)
+					SummonerIgnite(enemy)
+					Talon_R(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + E + R + Ignite Kill Steal ----------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Talon_ERIgnite and edmg + rdmg + ignitedmg > enemy.health and myHero.SpellTimeE > 1.0 and myHero.SpellTimeR > 1.0 and GetDistance(myHero,enemy) <= 700 then --E,R,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Talon_E(enemy)
+					Talon_R(enemy)
+				end
+			end
+		end
+	end
+end
+
+-------------------------------------------------
+-- Talon Spell Functions ------------------------
+-------------------------------------------------
+function Talon_Q(QTarget)
+	if QTarget ~= nil then
+		if GetDistance(myHero, QTarget) <= myHero.range and myHero.mana >= (40 + (10 * myHero.SpellLevelQ)) then
+			CastSpellTarget('Q', myHero)
+		end
+	end
+end
+
+function Talon_W(WTarget)
+	if WTarget ~= nil then
+		if GetDistance(myHero, WTarget) <= CfgYayoBuddy._SpellRanges.Talon_wRNG and myHero.mana >= (50 + (10 * myHero.SpellLevelW)) then
+			CastSpellTarget('W', WTarget)
+		end
+	end
+end
+
+function Talon_E(ETarget)
+	if ETarget ~= nil then
+		if GetDistance(myHero, ETarget) <= CfgYayoBuddy._SpellRanges.Talon_eRNG and myHero.mana >= (30 + (5 * myHero.SpellLevelE)) then
+			CastSpellTarget('E', ETarget)
+		end
+	end
+end
+
+function Talon_R(RTarget)
+	if RTarget ~= nil then
+		if GetDistance(myHero, RTarget) < CfgYayoBuddy._SpellRanges.Talon_rRNG and myHero.mana >= (70 + (10 * myHero.SpellLevelR)) then
+			CastSpellTarget('R',myHero)
+		end
+	end
+end
+
+---------------------------------------------------------------------------------------------------
+-- Sivir Section ----------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+Simple.Sivir = {
+	OnTick = function(target)
+		local targetQ = GetWeakEnemy('PHYS', 1075)
+		local targetW = target
+		local Qrange = CfgYayoBuddy._SpellRanges.qRNG
+-------------------------------------------------
+-- Yayo Auto Carry State ------------------------
+-------------------------------------------------		
+		if yayo.Config.AutoCarry then
+			if targetQ and CfgYayoBuddy._AutoCarry.Sivir_useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange and GetDistance(targetQ) > myHero.range then
+					Sivir_Q(targetQ)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Mixed Mode State ------------------------
+-------------------------------------------------
+		if yayo.Config.Mixed then
+			if targetQ and CfgYayoBuddy._MixedMode.Sivir_useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange and GetDistance(targetQ) > myHero.range then
+					Sivir_Q(targetQ)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Last Hit State --------------------------
+-------------------------------------------------
+		if yayo.Config.LastHit then
+			if targetQ and CfgYayoBuddy._LastHit.Sivir_useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange and GetDistance(targetQ) > myHero.range then
+					Sivir_Q(targetQ)
+				end
+			end
+		end
+-------------------------------------------------
+-- Yayo Lane Clear State ------------------------
+-------------------------------------------------
+		if yayo.Config.LaneClear then
+			if targetQ and CfgYayoBuddy._LaneClear.Sivir_useQ then
+				if ValidTarget(targetQ, Qrange) and GetDistance(targetQ) <= Qrange and GetDistance(targetQ) > myHero.range then
+					Sivir_Q(targetQ)
+				end
+			end
+		end
+		if CfgYayoBuddy.KillSteal.Sivir_KillSteal then SivirKillSteal() end
+	end,
+	-------------------------------------------------
+-- Attack Reset with W --------------------------
+-------------------------------------------------
+	AfterAttack = function(target)
+-------------------------------------------------
+-- Yayo AutoCarry State -------------------------
+-------------------------------------------------
+		if CfgYayoBuddy._AutoCarry.Sivir_useQ and yayo.Config.AutoCarry then
+			if target  then
+				if ValidTarget(target, myHero.range) then
+					Sivir_Q(target)
+				end
+			end
+		end
+		if CfgYayoBuddy._AutoCarry.Sivir_useW and yayo.Config.AutoCarry then
+			if target then
+				if myHero.SpellTimeQ < 1.0 and ValidTarget(target, myHero.range) then
+					Sivir_W(target)
+				end
+			end
+		end
+	end
+}
+
+-------------------------------------------------
+--KILL STEAL FUNCTIONS---------------------------
+-------------------------------------------------
+function SivirKillSteal() --15 KS Combinations
+	for i = 1, objManager:GetMaxHeroes()  do
+    	local enemy = objManager:GetHero(i)
+    	if (enemy ~= nil and enemy.team ~= myHero.team and enemy.visible == 1 and enemy.invulnerable == 0 and enemy.dead == 0) then
+			local qdmg = getDmg("Q",enemy,myHero)
+			local ignitedmg = (myHero.selflevel*20)+50
+-------------------------------------------------
+-- Q Kill Steal ---------------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Sivir_Q and qdmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 1075 then --Q KS
+				Sivir_Q(enemy)
+			end
+-------------------------------------------------
+-- Ignite Kill Steal ----------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Sivir_Ignite and ignitedmg > enemy.health and GetDistance(myHero,enemy) <= 600 then --Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+				end
+			end
+-------------------------------------------------
+-- Q + Ignite Kill Steal ------------------------
+-------------------------------------------------
+			if CfgYayoBuddy.KillSteal.Sivir_QIgnite and qdmg + ignitedmg > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(myHero,enemy) <= 600 then --Q,Ignite KS
+				if myHero.SummonerD == 'SummonerDot' and myHero.SpellTimeD > 1.0 or myHero.SummonerF == 'SummonerDot' and myHero.SpellTimeF > 1.0 then
+					SummonerIgnite(enemy)
+					Sivir_Q(enemy)
+				end
+			end
+		end
+	end
+end
+
+-------------------------------------------------
+-- Sivir Spell Functions ----------------------
+-------------------------------------------------
+function Sivir_Q(QTarget)
+	local Qrange, Qwidth, Qspeed, Qdelay = CfgYayoBuddy._SpellRanges.qRNG, 85, 1350, 0.25
+	if QTarget ~= nil then
+		if GetDistance(myHero, QTarget) <= CfgYayoBuddy._SpellRanges.qRNG and myHero.mana >= (60 + (10 * myHero.SpellLevelQ)) then
+			local CastPosition, HitChance, Position = YP:GetLineCastPosition(QTarget, Qdelay, Qwidth, Qrange, Qspeed, myHero, false)
+			if HitChance >= 2 then
+				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+				CastSpellXYZ('Q', x, y, z)
+			end
+		end
+	end
+end
+
+function Sivir_W(WTarget)
+	if WTarget ~= nil then
+		if GetDistance(myHero, WTarget) <= myHero.range and myHero.mana >= 60 and myHero.SpellTimeW > 1.0 then
+			CastSpellTarget('W', myHero)
+		end
+	end
+end
+
+function Sivir_E(ETarget)
+	if ETarget ~= nil then
+		if myHero.SpellTimeE > 1.0 then
+			CastSpellTarget('E', myHero)
+		end
+	end
+end
 
 ---------------------------------------------------------------------------------------------------
 -- Graves Section ---------------------------------------------------------------------------------
@@ -2087,6 +2565,10 @@ Simple.Riven = {
 Simple.Ryze = {
 	OnTick = function(target)
 		local target = GetWeakEnemy('Magic', 625)
+		if target and GetDistance(target, myHero) >= 450 then yayo.DisableAttacks()
+		else
+			yayo.EnableAttacks()
+		end
 		if yayo.Config.AutoCarry then
 			if target then
 				if CfgYayoBuddy._AutoCarry.useAA then yayo.EnableAttacks() else yayo.DisableAttacks() end
@@ -2140,8 +2622,16 @@ Simple.Ryze = {
 				end
 			end
 		end
+		if not target and (yayo.Config.LaneClear or yayo.Config.Mixed) then SpellFarm() end
 	end
 }
+
+function SpellFarm()
+	local target = GetLowestHealthEnemyMinion(625)
+	if target and target.health <= getDmg('Q', target, myHero) then CastSpellTarget('Q', target) end
+	if target and target.health <= getDmg('W', target, myHero) then CastSpellTarget('W', target) end
+	if target and target.health <= getDmg('E', target, myHero) then CastSpellTarget('E', target) end
+end
 
 ---------------------------------------------------------------------------------------------------
 -- Miss Fortune Section ---------------------------------------------------------------------------
@@ -3385,6 +3875,473 @@ function Corki_R(RTarget)
 end
 
 ---------------------------------------------------------------------------------------------------
+-- Global Functions -------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+
+local spells = {
+	Ahri = {
+		{name= "AhriOrbofDeception", radius = 80, time = 1, isline = true},
+		{name= "AhriSeduce", radius = 80, time = 1, isline = true},
+	},
+	Amumu = {
+		{name= "BandageToss", radius = 80, time = 1, isline = true},
+	},
+	Anivia = {
+		{name= "FlashFrostSpell", radius = 90, time = 2, isline = true},
+	},
+	Ashe = {
+		{name= "EnchantedCrystalArrow", radius = 120, time = 2, isline = true}, --c
+		{name= "Volley", radius = 120, time = 1, isline = true}, --c
+	},
+	Blitzcrank = {
+		{name= "RocketGrab", radius = 80, time = 1, isline = true},
+		{name= "StaticField", radius = 600, time = 1, isline = false},
+	},
+	Brand = {
+		{name= "BrandBlazeMissile", radius = 70, time = 1, isline = true},
+		{name= "BrandFissure", radius = 250, time = 4, isline = false},
+	},
+	Cassiopeia = {
+		{name= "CassiopeiaMiasma", radius = 175, time = 1, isline = false},
+		{name= "CassiopeiaNoxiousBlast", radius = 75, time = 1, isline = false},
+	},
+	Caitlyn = {
+		{name= "CaitlynEntrapment", radius = 80, time = 1, isline = true}, --c
+		{name= "CaitlynPiltoverPeacemaker", radius = 80, time = 1, isline = true}, --c
+		{name= "CaitlynYordleTrap", radius = 80, time = 1, isline = false}, --c
+	},
+	Corki = {
+		{name= "MissileBarrageMissile", radius = 80, time = 1, isline = true},
+		{name= "MissileBarrageMissile2", radius = 100, time = 1, isline = true},
+		{name= "CarpetBomb", radius = 150, time = 1, isline = true},
+		{name= "PhosphorusBomb", radius = 150, time = 1, isline = false}, --cc
+	},
+	Chogath = {
+		{name= "Rupture", radius = 275, time = 1, isline = false},
+	},
+	Diana = {
+		{name= "DianaArc", radius = 205, time = 1, isline = true},
+	},
+	DrMundo = {
+		{name= "InfectedCleaverMissile", radius = 80, time = 1, isline = true},
+	},
+	Draven = {
+		{name= "DravenDoubleShot", radius = 125, time = 1, isline = true},
+		{name= "DravenRCast", radius = 100, time = 4, isline = true},
+	},
+	Elise = {
+		{name= "EliseHumanE", radius = 100, time = 1, isline = true},
+	},
+	Ezreal = {
+		{name= "EzrealEssenceFluxMissile", radius = 100, time = 1, isline = true},
+		{name= "EzrealMysticShotMissile", radius = 80, time = 1, isline = true},
+		{name= "EzrealEssenceFluxMissile", radius = 150, time = 4, isline = true},
+		{name= "EzrealArcaneShift", radius = 100, time = 1, isline = true},
+	},
+	Fizz = {
+		{name= "FizzMarinerDoom", radius = 100, time = 1.5, isline = true},
+	},
+	FiddleSticks = {
+		{name= "Crowstorm", radius = 600, time = 1.5, isline = false},
+	},
+	Karthus = {
+		{name= "LayWaste", radius = 150, time = 1, isline = false},
+	},
+	Galio = {
+		{name= "GalioResoluteSmite", radius = 200, time = 1.5, isline = false},
+		{name= "GalioRighteousGust", radius = 120, time = 1.5, isline = true},
+	},
+	Graves = {
+		{name= "GravesChargeShot", radius = 100, time = 1, isline = true},
+		{name= "GravesClusterShot", radius = 100, time = 1, isline = true},
+	},
+	Gragas = {
+		{name= "GragasBarrelRoll", radius = 320, time = 2.5, isline = false},
+		{name= "GragasBodySlam", radius = 60, time = 1.5, isline = true},
+		{name= "GragasExplosiveCask", radius = 400, time = 1.5, isline = false},
+	},
+	Heimerdinger = {
+		{name= "CH1ConcussionGrenade", radius = 225, time = 1.5, isline = true},
+	},
+	Irelia = {
+		{name= "IreliaTranscendentBlades", radius = 80, time = 0.8, isline = true},
+	},
+	Janna = {
+		{name= "HowlingGale", radius = 100, time = 2, isline = true},
+	},
+	Jinx = {
+		{name= "JinxW", radius = 80, time = 1, isline = true}, --c
+		{name= "JinxE", radius = 100, time = 1, isline = false}, --c
+		{name= "JinxRWrapper", radius = 120, time = 2, isline = true}, --c
+	},
+	JarvanIV = {
+		{name= "JarvanIVDemacianStandard", radius = 150, time = 2, isline = false},
+		{name= "JarvanIVDragonStrike", radius = 70, time = 1, isline = true},
+		{name= "JarvanIVCataclysm", radius = 300, time = 1.5, isline = false},
+	},
+	Kassadin = {
+		{name= "RiftWalk", radius = 150, time = 1, isline = false},
+	},
+	Katarina = {
+		{name= "ShadowStep", radius = 75, time = 1, isline = false},
+	},
+	Kennen = {
+		{name= "KennenShurikenHurlMissile1", radius = 75, time = 1, isline = true},
+	},
+	Khazix = {
+		{name= "KhazixE", radius = 200, time = 1, isline = false},
+		{name= "KhazixW", radius = 120, time = 0.5, isline = true},
+		{name= "khazixwlong", radius = 80, time = 1, isline = true},
+		{name= "khazixelong", radius = 200, time = 1, isline = false},
+	},
+	KogMaw = {
+		{name= "KogMawQ", radius = 80, time = 1, isline = true}, --cc
+		{name= "KogMawVoidOoze", radius = 100, time = 1, isline = true},
+		{name= "KogMawLivingArtillery", radius = 200, time = 1.5, isline = false},
+	},
+	Lucian = {
+		{name= "LucianQ", radius = 80, time = 1, isline = true}, --cc
+		--{name= "LucianW", radius = 200, time = 1, isline = true}, --cc
+		{name= "LucianR", radius = 100, time = 1, isline = true}, --c
+	},
+	Leblanc = {
+		{name= "LeblancSoulShackle", radius = 80, time = 1, isline = true},
+		{name= "LeblancSoulShackleM", radius = 80, time = 1, isline = true},
+		{name= "LeblancSlide", radius = 250, time = 1, isline = false},
+		{name= "LeblancSlideM", radius = 250, time = 1, isline = false},
+		{name= "leblancslidereturn", radius = 50, time = 1, isline = false},
+		{name= "leblancslidereturnm", radius = 50, time = 1, isline = false},
+	},
+	LeeSin = {
+		{name= "BlindMonkQOne", radius = 80, time = 1, isline = true},
+		{name= "BlindMonkRKick", radius = 100, time = 1.5, isline = true},
+	},
+	LeeSin = {
+		{name= "BlindMonkQOne", radius = 80, time = 1, isline = true},
+		{name= "BlindMonkRKick", radius = 100, time = 1, isline = true},
+	},
+	Leona = {
+		{name= "LeonaZenithBlade", radius = 80, time = 1, isline = true},
+		{name= "LeonaSolarFlare", radius = 250, time = 1, isline = false},
+	},
+	Lux = {
+		{name= "LuxLightBinding", radius = 150, time = 1, isline = true},
+		{name= "LuxLightStrikeKugel", radius = 300, time = 2.5, isline = false},
+		{name= "LuxMaliceCannon", radius = 180, time = 1.5, isline = true},
+	},
+	Lulu = {
+		{name= "LuluQ", radius = 80, time = 1, isline = true},
+	},
+	Maokai = {
+		{name= "MaokaiTrunkLineMissile", radius = 100, time = 1, isline = true},
+		{name= "MaokaiSapling2", radius = 350, time = 1, isline = false},
+	},
+	Malphite = {
+		{name= "UFSlash", radius = 325, time = 1, isline = false},
+	},
+	Malzahar = {
+		{name= "AlZaharCalloftheVoid", radius = 100, time = 1, isline = false},
+		{name= "AlZaharNullZone", radius = 250, time = 1, isline = false},
+	},
+	MissFortune = {
+		{name= "MissFortuneScattershot", radius = 400, time = 3, isline = false},
+	},
+	Morgana = {
+		{name= "DarkBindingMissile", radius = 90, time = 1.5, isline = true},
+		{name= "TormentedSoil", radius = 300, time = 1.5, isline = false},
+	},
+	Nautilus = {
+		{name= "NautilusAnchorDrag", radius = 80, time = 1.5, isline = true},
+	},
+	Nami = {
+		{name= "NamiQ", radius = 170, time = 1.5, isline = false},
+		{name= "NamiR", radius = 570, time = 2, isline = true},
+	},
+	Nidalee = {
+		{name= "JavelinToss", radius = 80, time = 1.5, isline = true},
+	},
+	Nocturne = {
+		{name= "NocturneDuskbringer", radius = 80, time = 1.5, isline = true},
+	},
+	Olaf = {
+		{name= "OlafAxeThrow", radius = 100, time = 1.5, isline = true},
+	},
+	Orianna = {
+		{name= "OrianaIzunaCommand", radius = 150, time = 1.5, isline = false},
+	},
+	Quinn = {
+		{name= "QuinnQ", radius = 210, time = 1, isline = true},
+		--{name= "QuinnR", radius = 700, time = 1, isline = false}, ???
+	},
+	Renekton = {
+		{name= "RenektonSliceAndDice", radius = 80, time = 1, isline = true},
+		{name= "renektondice", radius = 80, time = 1, isline = true},
+	},
+	Rumble = {
+		{name= "RumbleGrenadeMissile", radius = 100, time = 1.5, isline = true},
+		{name= "renektondice", radius = 100, time = 1.5, isline = true},
+	},
+	Sivir = {
+		{name= "SivirQ", radius = 100, time = 1, isline = true},
+	},
+	Singed = {
+		{name= "MegaAdhesive", radius = 350, time = 1.5, isline = false},
+	},
+	Singed = {
+		{name= "ShenShadowDash", radius = 80, time = 1, isline = true},
+	},
+	Shaco = {
+		{name= "Deceive", radius = 100, time = 3.5, isline = false},
+	},
+	Shyvana = {
+		{name= "ShyvanaTransformLeap", radius = 80, time = 1.5, isline = true},
+		{name= "ShyvanaFireballMissile", radius = 80, time = 1, isline = true},
+	},
+	Skarner = {
+		{name= "SkarnerFracture", radius = 100, time = 1, isline = true},
+	},
+	Sona = {
+		{name= "SonaCrescendo", radius = 150, time = 1, isline = true},
+	},
+	Sejuani = {
+		{name= "SejuaniGlacialPrison", radius = 180, time = 1, isline = true},
+	},
+	Swain = {
+		{name= "SwainShadowGrasp", radius = 265, time = 1.5, isline = false},
+	},
+	Syndra = {
+		{name= "SyndraQ", radius = 200, time = 1, isline = false},
+		{name= "SyndraE", radius = 100, time = 0.5, isline = true},
+		{name= "syndrawcast", radius = 200, time = 1, isline = false},
+	},
+	Teemo = {
+		{name= "BlindingDart", radius = 100, time = 1, isline = true},
+	},
+	Thresh = {
+		{name= "ThreshQ", radius = 80, time = 1, isline = true},
+		{name= "ThreshRPenta", radius = 400, time = 1, isline = false},
+	},
+	Tryndamere = {
+		{name= "Slash", radius = 100, time = 1, isline = true},
+	},
+	Tristana = {
+		{name= "RocketJump", radius = 200, time = 1, isline = false},
+	},
+	TwistedFate = {
+		{name= "WildCards", radius = 80, time = 1, isline = true},
+	},
+	Urgot = {
+		{name= "UrgotHeatseekingLineMissile", radius = 80, time = 0.8, isline = true},
+		{name= "UrgotPlasmaGrenade", radius = 300, time = 1, isline = false},
+	},
+	Vayne = {
+		{name= "VayneTumble", radius = 100, time = 1, isline = false},
+	},
+	Varus = {
+		{name= "VarusQ", radius = 80, time = 1.5, isline = true},
+		{name= "VarusR", radius = 80, time = 1.5, isline = true},
+	},
+	Veigar = {
+		{name= "VeigarDarkMatter", radius = 225, time = 2, isline = false},
+	},
+	Viktor = {
+		--{name= "ViktorDeathRay", radius = 80, time = 2, isline = true},
+	},
+	Xerath = {
+		{name= "xeratharcanopulsedamage", radius = 80, time = 1, isline = true},
+		{name= "xeratharcanopulsedamageextended", radius = 80, time = 1, isline = true},
+		{name= "xeratharcanebarragewrapper", radius = 250, time = 1, isline = false},
+		{name= "xeratharcanebarragewrapperext", radius = 250, time = 1, isline = false},
+	},
+	Zed = {
+		{name= "ZedShuriken", radius = 100, time = 1, isline = true},
+		{name= "ZedShadowDash", radius = 150, time = 1, isline = false},
+		{name= "zedw2", radius = 150, time = 0.5, isline = false},
+	},
+	Ziggs = {
+		{name= "ZiggsQ", radius = 160, time = 1, isline = true},
+		{name= "ZiggsW", radius = 225, time = 1, isline = false},
+		{name= "ZiggsE", radius = 250, time = 1, isline = false},
+		{name= "ZiggsR", radius = 550, time = 3, isline = false},
+	},
+	Zyra = {
+		{name= "ZyraQFissure", radius = 275, time = 1.5, isline = true},
+		{name= "ZyraGraspingRoots", radius = 90, time = 2, isline = true},
+	},
+}  
+
+
+function GetAngle(p1, p2) 
+	local a = p1.x - p2.x
+	local b = p1.z - p2.z
+  local angle = math.atan(a/b)
+  if b < 0 then
+   	angle = angle+math.pi
+  end  			
+  return angle
+end
+
+function GetLinePoint(pos,angle,distance)
+	local ret = {x = 0, y = 0, z = 0}
+	ret.x = pos.x - distance*math.sin(angle)
+	ret.z = pos.z - distance*math.cos(angle)
+	return ret
+end
+
+function GetSpellShot(name,spellName)
+	local spellTable = spells[name]
+	if spellTable ~= nil then
+		for i=1, #spellTable, 1 do	
+			if spellName == spellTable[i].name then
+				local ret = spellTable[i]
+				return ret
+			end
+		end
+	end
+	return nil
+end
+
+function SpellShotTarget(unit,spell,target)
+	if unit ~= nil and unit.team ~= target.team and spell ~= nil then
+		local spellShot = GetSpellShot(unit.name, spell.name)
+		if spellShot ~= nil then
+			if spellShot.isline then
+				local angle = GetAngle(spell.startPos, spell.endPos)
+				local d1 = GetDistance(spell.startPos, spell.endPos)
+				local d2 = GetDistance(spell.startPos, target)
+				if d2 < d1 + spellShot.radius then
+					local point = GetLinePoint(spell.startPos, angle, d2)
+					local d3 = GetDistance(target, point)
+					if d3 <= spellShot.radius then
+						local angle = GetAngle(point, target)
+						local safePoint = GetLinePoint(point, angle, spellShot.radius*1.2)
+						if IsWall(safePoint.x, safePoint.y, safePoint.z) == 1 then
+							angle = GetAngle(safePoint, point)
+							safePoint = GetLinePoint(safePoint, angle, spellShot.radius*1.2*2)
+							if IsWall(safePoint.x, safePoint.y, safePoint.z) == 1 then
+								return nil
+							end
+						end
+						local ret = {shot = false, radius = 0, time = 0, shotX = 0, shotZ = 0, shotY = 0, safeX = 0, safeY = 0, safeZ = 0, isline = false}
+						ret.shot = true
+						ret.radius = spellShot.radius
+						ret.time = GetClock()+spellShot.time*1000
+						ret.shotX = point.x
+						ret.shotY = point.y
+						ret.shotZ = point.z
+						ret.safeX = safePoint.x
+						ret.safeY = safePoint.y
+						ret.safeZ = safePoint.z
+						ret.isline = true
+						return ret
+					end
+				end
+			else
+				local d1 = GetDistance(target, spell.endPos)
+				if d1 <= spellShot.radius then
+					local angle = GetAngle(spell.startPos, spell.endPos)
+					local d2 = GetDistance(spell.startPos, target)
+					local point = GetLinePoint(spell.startPos, angle, d2)
+					angle = GetAngle(point, target)
+					local safePoint = GetLinePoint(point, angle, spellShot.radius*1.2)
+					if IsWall(safePoint.x, safePoint.y, safePoint.z) == 1 then
+						return nil
+					end
+					local ret = {shot = false, radius = 0, time = 0, shotX = 0, shotZ = 0, shotY = 0, safeX = 0, safeY = 0, safeZ = 0, isline = false}
+					ret.shot = true
+					ret.radius = spellShot.radius
+					ret.time = GetClock()+spellShot.time*1000
+					ret.shotX = spell.endPos.x
+					ret.shotY = spell.endPos.y
+					ret.shotZ = spell.endPos.z
+					ret.safeX = safePoint.x
+					ret.safeY = safePoint.y
+					ret.safeZ = safePoint.z
+					ret.isline = false
+					return ret
+				end
+			end
+		end
+	end
+	return nil
+end
+
+function ResetTimer()
+        if GetTickCount() - spellShot.time > 0 then
+                spellShot.shot = false
+                spellShot.time = 0
+                shotMe = false
+        end
+end
+ 
+function IsHero(unit)
+  for i=1, objManager:GetMaxHeroes(), 1 do
+                local object = objManager:GetHero(i)
+                if object ~= nil and object.charName == unit.charName then
+                        return true
+                end
+        end
+        return false
+end
+
+function autoShield(target)
+	if myHero.SpellTimeE > 1.0 then
+		if myHero.name == "Sivir" and CfgYayoBuddy.AutoShield.Sivir_SelfShield then
+    		CastSpellTarget("E",target)
+    	end
+	end    
+end
+
+function isAutoAttack(unit,spell)
+	if unit and spell and unit.charName ~= myHero.charName and IsHero(unit) and StringContains(spell.name, "attack") then
+		return true
+	else
+		return false
+	end
+end
+
+function StringContains(string, contains)
+	return string:lower():find(contains)
+end
+
+function OnProcessSpell(unit, spell)
+	if unit and spell and unit.team ~= myHero.team and IsHero(unit) and not isAutoAttack(unit, spell) then
+    	startPos = spell.startPos
+        endPos = spell.endPos
+		if spell.target then
+			local targetSpell = spell.target
+			if target and target.charName == targetSpell.charName then
+				target2 = unit
+				--autoShield(target)
+			end
+			if myHero.charName == targetSpell.charName then
+				target2 = unit
+				autoShield(myHero)
+			end                    
+		end
+		if target then
+			local shot = SpellShotTarget(unit, spell, target)
+			if shot then
+				spellShot = shot
+				if spellShot.shot then
+					target2 = unit
+					--autoShield(target)
+				end
+			end
+		end
+		local shot = SpellShotTarget(unit, spell, myHero)
+		if shot then
+			spellShot = shot
+			if spellShot.shot then
+				shotMe = true
+				target2 = unit
+				autoShield(myHero)
+			end
+		end
+	end
+end
+
+---------------------------------------------------------------------------------------------------
 -- Menu Items -------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------
 CfgYayoBuddy, menu = uiconfig.add_menu("CCONN's Yayo Buddy", 200)
@@ -3499,6 +4456,78 @@ if myHero.name == "Caitlyn" then
 	submenu.checkbutton('QRIgnite', 'Q + R + Ignite', true)
 	submenu.checkbutton('ERIgnite', 'E + R + Ignite', true)
 	submenu.checkbutton('QERIgnite', 'Q + E + R + Ignite', true)
+end
+-------------------------------------------------
+-- Talon Sub Menus ----------------------------
+-------------------------------------------------
+if myHero.name == "Talon" then
+	local submenu = menu.submenu('_AutoCarry')
+	submenu.checkbutton('Talon_useQ', 'Q: Noxian Diplomacy', true)
+	submenu.checkbutton('Talon_useW', 'W: Rake', true)
+	submenu.checkbutton('Talon_useE', 'E: Cutthroat', true)
+	submenu.keytoggle('Talon_useR', 'R: Shadow Assault', Keys.Z, false)
+	local submenu = menu.submenu('_LastHit')
+	submenu.checkbutton('Talon_useQ', 'Q: Noxian Diplomacy', true)
+	submenu.checkbutton('Talon_useW', 'W: Rake', true)
+	submenu.checkbutton('Talon_useE', 'E: Cutthroat', true)
+	submenu.checkbutton('Talon_useR', 'R: Shadow Assault', false)
+	local submenu = menu.submenu('_MixedMode')
+	submenu.checkbutton('Talon_useQ', 'Q: Noxian Diplomacy', true)
+	submenu.checkbutton('Talon_useW', 'W: Rake', true)
+	submenu.checkbutton('Talon_useE', 'E: Cutthroat', true)
+	submenu.checkbutton('Talon_useR', 'R: Shadow Assault', false)
+	local submenu = menu.submenu('_LaneClear')
+	submenu.checkbutton('Talon_useQ', 'Q: Noxian Diplomacy', true)
+	submenu.checkbutton('Talon_useW', 'W: Rake', true)
+	submenu.checkbutton('Talon_useE', 'E: Cutthroat', true)
+	submenu.checkbutton('Talon_useR', 'R: Shadow Assault', false)
+	local submenu = menu.submenu('_SpellRanges')
+	submenu.slider('Talon_wRNG', 'W: Rake', 0, 600, 600, nil, true)
+	submenu.slider('Talon_eRNG', 'E: Cutthroat', 0, 700, 700, nil, true)
+	submenu.slider('Talon_rRNG', 'R: Shadow Assault', 0, 500, 500, nil, true)
+	local submenu = menu.submenu('KillSteal')
+	submenu.checkbutton('Talon_KillSteal', 'Use Killsteals', true)
+	submenu.checkbutton('Talon_W', 'W', true)
+	submenu.checkbutton('Talon_E', 'E', true)
+	submenu.checkbutton('Talon_R', 'R', true)
+	submenu.checkbutton('Talon_Ignite', 'Ignite', true)
+	submenu.checkbutton('Talon_WE', 'W + E', true)
+	submenu.checkbutton('Talon_WR', 'W + R', true)
+	submenu.checkbutton('Talon_WIgnite', 'W + Ignite', true)
+	submenu.checkbutton('Talon_ER', 'E + R', true)
+	submenu.checkbutton('Talon_EIgnite', 'E + Ignite', true)
+	submenu.checkbutton('Talon_RIgnite', 'R + Ignite', true)
+	submenu.checkbutton('Talon_WER', 'W + E + R', true)
+	submenu.checkbutton('Talon_WEIgnite', 'W + E + Ignite', true)
+	submenu.checkbutton('Talon_WRIgnite', 'W + R + Ignite', true)
+	submenu.checkbutton('Talon_ERIgnite', 'E + R + Ignite', true)
+	submenu.checkbutton('Talon_WERIgnite', 'W + E + R + Ignite', true)
+end
+-------------------------------------------------
+-- Sivir Sub Menus ----------------------------
+-------------------------------------------------
+if myHero.name == "Sivir" then
+	local submenu = menu.submenu('_AutoCarry')
+	submenu.checkbutton('Sivir_useQ', 'Q: Boomerang Blade', true)
+	submenu.checkbutton('Sivir_useW', 'W: Ricochet', true)
+	local submenu = menu.submenu('_LastHit')
+	submenu.checkbutton('Sivir_useQ', 'Q: Boomerang Blade', true)
+	submenu.checkbutton('Sivir_useW', 'W: Ricochet', true)
+	local submenu = menu.submenu('_MixedMode')
+	submenu.checkbutton('Sivir_useQ', 'Q: Boomerang Blade', true)
+	submenu.checkbutton('Sivir_useW', 'W: Ricochet', true)
+	local submenu = menu.submenu('_LaneClear')
+	submenu.checkbutton('Sivir_useQ', 'Q: Boomerang Blade', true)
+	submenu.checkbutton('Sivir_useW', 'W: Ricochet', true)
+	local submenu = menu.submenu('_SpellRanges')
+	submenu.slider('qRNG', 'Q: Boomerang', 0, 1075, 1075, nil, true)
+	local submenu = menu.submenu('AutoShield')
+	submenu.checkbutton('Sivir_SelfShield', 'Spell Shield Self')
+	local submenu = menu.submenu('KillSteal')
+	submenu.checkbutton('Sivir_KillSteal', 'Use Killsteals', true)
+	submenu.checkbutton('Sivir_Q', 'Q', true)
+	submenu.checkbutton('Sivir_Ignite', 'Ignite', true)
+	submenu.checkbutton('Sivir_QIgnite', 'Q + Ignite', true)
 end
 -------------------------------------------------
 -- Corki Sub Menus ----------------------------
