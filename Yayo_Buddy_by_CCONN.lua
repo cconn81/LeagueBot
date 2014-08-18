@@ -1,5 +1,5 @@
 local scriptName = "YayoBuddy"
-local version = 2.6
+local version = "2.6.1"
 
 require 'yprediction'
 require 'spell_damage'
@@ -232,7 +232,7 @@ YayoBuddy.Ahri = {
 		submenu.checkbox('useR', 'R: Spirit Rush', false)
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS MINIONS:')
-		submenu.checkbox('farmQ', 'Q: Orb of Deceoption', false)
+		submenu.checkbox('farmQ', 'Q: Orb of Deception', false)
 		submenu.checkbox('farmW', 'W: Fox-Fire', true)
 		local submenu = menu.submenu('_MixedMode')
 		submenu.label('lbl', '--------------------')
@@ -1193,7 +1193,7 @@ YayoBuddy.Graves = {
 YayoBuddy.KogMaw = {
 	OnTick = function(target)
 		StackReset()
-		comboYayoBuddy(P, GetRRange(), 2, YayoBuddy.KogMaw.W, 3, YayoBuddy.KogMaw.E, 4, YayoBuddy.KogMaw.R, 1, YayoBuddy.KogMaw.Q)
+		comboYayoBuddy(P, 1800, 2, YayoBuddy.KogMaw.W, 3, YayoBuddy.KogMaw.E, 4, YayoBuddy.KogMaw.R, 1, YayoBuddy.KogMaw.Q)
 		if CfgYayoBuddy_KogMaw.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.KogMaw.Q, 1000, x, x, YayoBuddy.KogMaw.E, 1280, YayoBuddy.KogMaw.R, GetRRange(), x) end
 		if CfgYayoBuddy_KogMaw.AutoPotions.AutoPotions_ONOFF then autoPotions(CfgYayoBuddy_KogMaw.AutoPotions.Health_Potion_Value, CfgYayoBuddy_KogMaw.AutoPotions.Chrystalline_Flask_Value, CfgYayoBuddy_KogMaw.AutoPotions.Elixir_of_Fortitude_Value, CfgYayoBuddy_KogMaw.AutoPotions.Mana_Potion_Value) end
 	end,
@@ -2545,6 +2545,8 @@ function getMenu()
 		return CfgYayoBuddy_Tristana
 	elseif myHero.name == "Vayne" then
 		return CfgYayoBuddy_Vayne
+	else
+		return CfgYayoBuddy_Unsupported
 	end
 	return nil
 end
