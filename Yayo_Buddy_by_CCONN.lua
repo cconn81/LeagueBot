@@ -1,5 +1,5 @@
 local scriptName = "YayoBuddy"
-local version = "2.6.2"
+local version = "2.6.3"
 
 require 'yprediction'
 require 'spell_damage'
@@ -1688,7 +1688,14 @@ YayoBuddy.MissFortune = {
 
 YayoBuddy.Ryze = {
 	OnTick = function(target)
-		comboYayoBuddy(M, 625, 1, YayoBuddy.Ryze.Q, 2, YayoBuddy.Ryze.W, 3, YayoBuddy.Ryze.E, 4, YayoBuddy.Ryze.R)
+		local ryzeTarget = GetWeakEnemy("MAGIC", 700)
+		rangeAdjustRyze(target,CfgYayoBuddy_Ryze._AutoCarry.aaRNG)
+		if ryzeTarget ~= nil and GetTargetDirection(ryzeTarget) == FLEEING then
+			comboYayoBuddy(M, 600, 2, YayoBuddy.Ryze.W, 1, YayoBuddy.Ryze.Q, 3, YayoBuddy.Ryze.E, 4, YayoBuddy.Ryze.R) -- snare combo
+			print("Yayo Buddy: using Ryze Snare Combo")
+		else
+			comboYayoBuddy(M, 625, 1, YayoBuddy.Ryze.Q, 2, YayoBuddy.Ryze.W, 3, YayoBuddy.Ryze.E, 4, YayoBuddy.Ryze.R) -- standard combo
+		end
 		if CfgYayoBuddy_Ryze.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Ryze.Q, 625, YayoBuddy.Ryze.W, 600, YayoBuddy.Ryze.E, 600, YayoBuddy.Ryze.R, 600, x) end
 		spellFarm(625, YayoBuddy.Ryze.Q, YayoBuddy.Ryze.W, YayoBuddy.Ryze.E, x)
 		if CfgYayoBuddy_Ryze.AutoPotions.AutoPotions_ONOFF then autoPotions(CfgYayoBuddy_Ryze.AutoPotions.Health_Potion_Value, CfgYayoBuddy_Ryze.AutoPotions.Chrystalline_Flask_Value, CfgYayoBuddy_Ryze.AutoPotions.Elixir_of_Fortitude_Value, CfgYayoBuddy_Ryze.AutoPotions.Mana_Potion_Value) end
@@ -1720,13 +1727,18 @@ YayoBuddy.Ryze = {
 	R = function(target)
 		local spellData = { range = CfgYayoBuddy_Ryze.SpellOptions.rRNG }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 then
-				CastSpellTarget('R',target)
+			if GetDistance(myHero, target) <= spellData.range and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 and myHero.SpellTimeQ < 1.0 and myHero.SpellTimeW < 1.0 and myHero.SpellTimeE < 1.0 then
+				CastSpellTarget('R',myHero)
 			end
 		end
 	end,
 	OnProcessSpell = function(unit, spell)
 		if unit ~= nil and spell ~= nil and IsHero(unit) then
+			if spell.name == "Overload" then
+				if CfgYayoBuddy_Ryze.SpellOptions.useRHP and myHero.health <= myHero.maxHealth * (CfgYayoBuddy_Ryze.SpellOptions.rVAL / 100) then 
+					CastSpellTarget('R', myHero) 
+				end
+			end
 			print("OnProcessSpell detected for "..unit.name.." spell name: "..spell.name)
 		end
 	end,
@@ -1754,6 +1766,7 @@ YayoBuddy.Ryze = {
 		submenu.checkbox('useW', 'W: Rune Prison', true)
 		submenu.checkbox('useE', 'E: Spell Flux', true)
 		submenu.checkbox('useR', 'R: Desperate Power', false)
+		submenu.slider('aaRNG', 'AA Range', 0, 550, 400, nil, true)
 		local submenu = menu.submenu('_LaneClear')
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS CHAMPIONS:')
@@ -1807,6 +1820,10 @@ YayoBuddy.Ryze = {
 		submenu.slider('wRNG', 'W: Rune Prison', 0, 600, 600, nil, true)
 		submenu.slider('eRNG', 'E: Spell Flux', 0, 600, 600, nil, true)
 		submenu.slider('rRNG', 'R: Desperate Power', 0, 600, 600, nil, true)
+		submenu.label('lbl', '--------------------')
+		submenu.label('lbl', 'Ultimate Options:')
+		submenu.checkbox('useRHP', 'Use Ultimate when low HP', true)
+		submenu.slider('rVAL', 'R: Health Threshold', 0, 100, 50, nil, true)
 		local submenu = menu.submenu('KillSteals')
 		submenu.checkbutton('ks_ONOFF', 'Enable Kill Steals', true)
 		submenu.checkbox('ksQ', 'Kill Steal with Q', true)
@@ -2363,6 +2380,22 @@ YayoBuddy.Vayne = {
 
 -------------------GLOBAL FUNCTIONS
 
+function rangeAdjustRyze(target, range)
+	if yayo.Config.AutoCarry and target == nil then
+		yayo.DisableAttacks()
+	end
+	if target ~= nil then
+		if GetDistance(target, myHero) >= range and GetTargetDirection(target) ~= CHASING then
+			yayo.DisableAttacks()
+		elseif GetDistance(target, myHero) < range then
+			yayo.EnableAttacks()
+		end
+	end
+	if yayo.Config.LastHit or yayo.Config.Mixed or yayo.Config.LaneClear then
+		yayo.EnableAttacks()
+	end
+end
+
 function GetTargetDirection(target)
 	local distanceTarget = GetDistance(target)
     local x1, y1, z1 = GetFireahead(target,2,10)
@@ -2777,8 +2810,8 @@ function comboYayoBuddy(targettype, range, spell1, func1, spell2, func2, spell3,
 		if yayo.Config.Mixed and func2 ~= x then
 			if spell2 == 1 and menu._MixedMode.useQ then func2(spellTarget)
 			elseif spell2 == 2 and menu._MixedMode.useW then func2(spellTarget)
-			elseif Spell2 == 3 and menu._MixedMode.useE then func2(spellTarget)
-			elseif Spell2 == 4 and menu._MixedMode.useR then func2(spellTarget)
+			elseif spell2 == 3 and menu._MixedMode.useE then func2(spellTarget)
+			elseif spell2 == 4 and menu._MixedMode.useR then func2(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell2")
 			end
