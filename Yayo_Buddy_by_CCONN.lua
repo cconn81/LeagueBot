@@ -1,5 +1,5 @@
 local scriptName = "YayoBuddy"
-local version = "2.6.1"
+local version = "2.6.2"
 
 require 'yprediction'
 require 'spell_damage'
@@ -2069,7 +2069,7 @@ YayoBuddy.Tristana = {
 		end
 	end,
 	E = function(target)
-		local spellData = { range = myHero.range, mana = (40 + (10 * myHero.SpellLevel * 10)), manaThreshold = CfgYayoBuddy_Tristana.ManaManager.manaE }
+		local spellData = { range = 550, mana = (40 + (10 * myHero.SpellLevel * 10)), manaThreshold = CfgYayoBuddy_Tristana.ManaManager.manaE }
 		if target ~= nil then
 			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				CastSpellTarget('E', target)
@@ -2730,157 +2730,109 @@ function comboYayoBuddy(targettype, range, spell1, func1, spell2, func2, spell3,
 		end
 
 		if yayo.Config.LastHit and func1 ~= x then
-			if spell1 == 1 then
-				if menu._LastHit.useQ then func1(spellTarget) end
-			elseif spell1 == 2 then
-				if menu._LastHit.useW then func1(spellTarget) end
-			elseif Spell1 == 3 then
-				if menu._LastHit.useE then func1(spellTarget) end
-			elseif Spell1 == 4 then
-				if menu._LastHit.useR then func1(spellTarget) end
+			if spell1 == 1 and menu._LastHit.useQ then func1(spellTarget)
+			elseif spell1 == 2 and menu._LastHit.useW then func1(spellTarget)
+			elseif spell1 == 3 and menu._LastHit.useE then func1(spellTarget)
+			elseif spell1 == 4 and menu._LastHit.useR then func1(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell1")
 			end
 		end
 		if yayo.Config.LastHit and func2 ~= x then
-			if spell2 == 1 then
-				if menu._LastHit.useQ then func2(spellTarget) end
-			elseif spell2 == 2 then
-				if menu._LastHit.useW then func2(spellTarget) end
-			elseif Spell2 == 3 then
-				if menu._LastHit.useE then func2(spellTarget) end
-			elseif Spell2 == 4 then
-				if menu._LastHit.useR then func2(spellTarget) end
+			if spell2 == 1 and menu._LastHit.useQ then func2(spellTarget)
+			elseif spell2 == 2 and menu._LastHit.useW then func2(spellTarget)
+			elseif spell2 == 3 and menu._LastHit.useE then func2(spellTarget)
+			elseif spell2 == 4 and menu._LastHit.useR then func2(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell2")
 			end
 		end
 		if yayo.Config.LastHit and func3 ~= x then
-			if spell3 == 1 then
-				if menu._LastHit.useQ then func3(spellTarget) end
-			elseif spell3 == 2 then
-				if menu._LastHit.useW then func3(spellTarget) end
-			elseif Spell3 == 3 then
-				if menu._LastHit.useE then func3(spellTarget) end
-			elseif Spell3 == 4 then
-				if menu._LastHit.useR then func3(spellTarget) end
+			if spell3 == 1 and menu._LastHit.useQ then func3(spellTarget)
+			elseif spell3 == 2 and menu._LastHit.useW then func3(spellTarget)
+			elseif spell3 == 3 and menu._LastHit.useE then func3(spellTarget)
+			elseif spell3 == 4 and menu._LastHit.useR then func3(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell3")
 			end
 		end
 		if yayo.Config.LastHit and func4 ~= x then
-			if spell4 == 1 then
-				if menu._LastHit.useQ then func4(spellTarget) end
-			elseif spell4 == 2 then
-				if menu._LastHit.useW then func4(spellTarget) end
-			elseif Spell4 == 3 then
-				if menu._LastHit.useE then func4(spellTarget) end
-			elseif Spell4 == 4 then
-				if menu._LastHit.useR then func4(spellTarget) end
+			if spell4 == 1 and menu._LastHit.useQ then func4(spellTarget)
+			elseif spell4 == 2 and menu._LastHit.useW then func4(spellTarget)
+			elseif spell4 == 3 and menu._LastHit.useE then func4(spellTarget)
+			elseif spell4 == 4 and menu._LastHit.useR then func4(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell4")
 			end
 		end
 		if yayo.Config.Mixed and func1 ~= x then
-			if spell1 == 1 then
-				if menu._MixedMode.useQ then func1(spellTarget) end
-			elseif spell1 == 2 then
-				if menu._MixedMode.useW then func1(spellTarget) end
-			elseif Spell1 == 3 then
-				if menu._MixedMode.useE then func1(spellTarget) end
-			elseif Spell1 == 4 then
-				if menu._MixedMode.useR then func1(spellTarget) end
+			if spell1 == 1 and menu._MixedMode.useQ then func1(spellTarget)
+			elseif spell1 == 2 and menu._MixedMode.useW then func1(spellTarget)
+			elseif spell1 == 3 and menu._MixedMode.useE then func1(spellTarget)
+			elseif spell1 == 4 and menu._MixedMode.useR then func1(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell1")
 			end
 		end
 		if yayo.Config.Mixed and func2 ~= x then
-			if spell2 == 1 then
-				if menu._MixedMode.useQ then func2(spellTarget) end
-			elseif spell2 == 2 then
-				if menu._MixedMode.useW then func2(spellTarget) end
-			elseif Spell2 == 3 then
-				if menu._MixedMode.useE then func2(spellTarget) end
-			elseif Spell2 == 4 then
-				if menu._MixedMode.useR then func2(spellTarget) end
+			if spell2 == 1 and menu._MixedMode.useQ then func2(spellTarget)
+			elseif spell2 == 2 and menu._MixedMode.useW then func2(spellTarget)
+			elseif Spell2 == 3 and menu._MixedMode.useE then func2(spellTarget)
+			elseif Spell2 == 4 and menu._MixedMode.useR then func2(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell2")
 			end
 		end
 		if yayo.Config.Mixed and func3 ~= x then
-			if spell3 == 1 then
-				if menu._MixedMode.useQ then func3(spellTarget) end
-			elseif spell3 == 2 then
-				if menu._MixedMode.useW then func3(spellTarget) end
-			elseif Spell3 == 3 then
-				if menu._MixedMode.useE then func3(spellTarget) end
-			elseif Spell3 == 4 then
-				if menu._MixedMode.useR then func3(spellTarget) end
+			if spell3 == 1 and menu._MixedMode.useQ then func3(spellTarget)
+			elseif spell3 == 2 and menu._MixedMode.useW then func3(spellTarget)
+			elseif spell3 == 3 and menu._MixedMode.useE then func3(spellTarget)
+			elseif spell3 == 4 and menu._MixedMode.useR then func3(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell3")
 			end
 		end
 		if yayo.Config.Mixed and func4 ~= x then
-			if spell4 == 1 then
-				if menu._MixedMode.useQ then func4(spellTarget) end
-			elseif spell4 == 2 then
-				if menu._MixedMode.useW then func4(spellTarget) end
-			elseif Spell4 == 3 then
-				if menu._MixedMode.useE then func4(spellTarget) end
-			elseif Spell4 == 4 then
-				if menu._MixedMode.useR then func4(spellTarget) end
+			if spell4 == 1 and menu._MixedMode.useQ then func4(spellTarget)
+			elseif spell4 == 2 and menu._MixedMode.useW then func4(spellTarget)
+			elseif spell4 == 3 and menu._MixedMode.useE then func4(spellTarget)
+			elseif spell4 == 4 and menu._MixedMode.useR then func4(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell4")
 			end
 		end
 		if yayo.Config.LaneClear and func1 ~= x then
-			if spell1 == 1 then
-				if menu._LaneClear.useQ then func1(spellTarget) end
-			elseif spell1 == 2 then
-				if menu._LaneClear.useW then func1(spellTarget) end
-			elseif Spell1 == 3 then
-				if menu._LaneClear.useE then func1(spellTarget) end
-			elseif Spell1 == 4 then
-				if menu._LaneClear.useR then func1(spellTarget) end
+			if spell1 == 1 and menu._LaneClear.useQ then func1(spellTarget)
+			elseif spell1 == 2 and menu._LaneClear.useW then func1(spellTarget)
+			elseif spell1 == 3 and menu._LaneClear.useE then func1(spellTarget)
+			elseif spell1 == 4 and menu._LaneClear.useR then func1(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell1")
 			end
 		end
 		if yayo.Config.LaneClear and func2 ~= x then
-			if spell2 == 1 then
-				if menu._LaneClear.useQ then func2(spellTarget) end
-			elseif spell2 == 2 then
-				if menu._LaneClear.useW then func2(spellTarget) end
-			elseif Spell2 == 3 then
-				if menu._LaneClear.useE then func2(spellTarget) end
-			elseif Spell2 == 4 then
-				if menu._LaneClear.useR then func2(spellTarget) end
+			if spell2 == 1 and menu._LaneClear.useQ then func2(spellTarget)
+			elseif spell2 == 2 and menu._LaneClear.useW then func2(spellTarget)
+			elseif spell2 == 3 and menu._LaneClear.useE then func2(spellTarget)
+			elseif spell2 == 4 and menu._LaneClear.useR then func2(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell2")
 			end
 		end
 		if yayo.Config.LaneClear and func3 ~= x then
-			if spell3 == 1 then
-				if menu._LaneClear.useQ then func3(spellTarget) end
-			elseif spell3 == 2 then
-				if menu._LaneClear.useW then func3(spellTarget) end
-			elseif Spell3 == 3 then
-				if menu._LaneClear.useE then func3(spellTarget) end
-			elseif Spell3 == 4 then
-				if menu._LaneClear.useR then func3(spellTarget) end
+			if spell3 == 1 and menu._LaneClear.useQ then func3(spellTarget)
+			elseif spell3 == 2 and menu._LaneClear.useW then func3(spellTarget)
+			elseif spell3 == 3 and menu._LaneClear.useE then func3(spellTarget)
+			elseif spell3 == 4 and menu._LaneClear.useR then func3(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell3")
 			end
 		end
 		if yayo.Config.LaneClear and func4 ~= x then
-			if spell4 == 1 then
-				if menu._LaneClear.useQ then func4(spellTarget) end
-			elseif spell4 == 2 then
-				if menu._LaneClear.useW then func4(spellTarget) end
-			elseif Spell4 == 3 then
-				if menu._LaneClear.useE then func4(spellTarget) end
-			elseif Spell4 == 4 then
-				if menu._LaneClear.useR then func4(spellTarget) end
+			if spell4 == 1 and menu._LaneClear.useQ then func4(spellTarget)
+			elseif spell4 == 2 and menu._LaneClear.useW then func4(spellTarget)
+			elseif spell4 == 3 and menu._LaneClear.useE then func4(spellTarget)
+			elseif spell4 == 4 and menu._LaneClear.useR then func4(spellTarget)
 			else
 				--print("Error in function comboYayoBuddy: Cannot identify spell4")
 			end
