@@ -1,5 +1,5 @@
 local scriptName = "YayoBuddy"
-local version = "2.8.0"
+local version = "2.8.1"
 
 require 'yprediction'
 require 'spell_damage'
@@ -92,11 +92,13 @@ function Init()
 end
 
 -------------------CHAMPION SECTION
-YayoBuddy.Unsupported = {
+YayoBuddy.Unsupported = { --add botrk
 	OnTick = function(target)
 		YayoBuddy.Unsupported.Intro()
 	end,
 	OnDraw = function(target)
+		if CfgYayoBuddy_Unsupported.ActiveItems.smartBWC then smartBWC(target) end
+		if CfgYayoBuddy_Unsupported.ActiveItems.smartBOTRK then smartBOTRK(target) end
 		if CfgYayoBuddy_Unsupported.RoamHelper.Enable then roamHelper(CfgYayoBuddy_Unsupported.RoamHelper.AAnumb, CfgYayoBuddy_Unsupported.RoamHelper.Qnumb, CfgYayoBuddy_Unsupported.RoamHelper.Wnumb, CfgYayoBuddy_Unsupported.RoamHelper.Enumb, CfgYayoBuddy_Unsupported.RoamHelper.Rnumb, CfgYayoBuddy_Unsupported.RoamHelper.ignite) end
 		if CfgYayoBuddy_Unsupported.AutoPotions.AutoPotions_ONOFF then autoPotions(CfgYayoBuddy_Unsupported.AutoPotions.Health_Potion_Value, CfgYayoBuddy_Unsupported.AutoPotions.Chrystalline_Flask_Value, CfgYayoBuddy_Unsupported.AutoPotions.Elixir_of_Fortitude_Value, CfgYayoBuddy_Unsupported.AutoPotions.Mana_Potion_Value) end
 	end,
@@ -123,6 +125,9 @@ YayoBuddy.Unsupported = {
 		submenu.slider('Mana_Potion_Value', 'Mana Potion Value', 0, 100, 75, nil, true)
 		submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
 		submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
+		local submenu = menu.submenu('ActiveItems')
+		submenu.checkbox('smartBWC', 'Smart Bilgewater Cutless', true)
+		submenu.checkbox('smartBOTRK', 'Smart Blade of the Ruined King', true)
 		local submenu = menu.submenu('RoamHelper')
 		submenu.checkbutton('Enable', 'Enable Roam Helper', true)
 		submenu.slider('AAnumb', 'Number of AAs', 0, 10, 2, {"0", "1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
@@ -158,6 +163,7 @@ YayoBuddy.Unsupported = {
 YayoBuddy.Ahri = {
 	OnTick = function(target)
 		YayoBuddy.Ahri.Intro()
+		if CfgYayoBuddy_Ahri._AutoCarry.useDFG and checkDFG() then YayoBuddy.Ahri.rotationDFG() end
 		comboYayoBuddy(M, 975, 4, YayoBuddy.Ahri.R, 3, YayoBuddy.Ahri.E, 1, YayoBuddy.Ahri.Q, 2, YayoBuddy.Ahri.W)
 		if CfgYayoBuddy_Ahri.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Ahri.Q, 880, YayoBuddy.Ahri.W, 800, YayoBuddy.Ahri.E, 975, x, 0, x) end
 		spellFarm(880, YayoBuddy.Ahri.Q, YayoBuddy.Ahri.W, x, x)
@@ -166,11 +172,13 @@ YayoBuddy.Ahri = {
 	Q = function(target)
 		local spellData = { range = CfgYayoBuddy_Ahri.SpellOptions.qRNG, width = 100, speed = 1600, delay = 0.25, mana = (50+(5*myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_Ahri.ManaManager.manaQ }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
-				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
-				if HitChance >= 2 then
-					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
-					CastSpellXYZ('Q', x, y, z)
+			if (GetTargetDirection(target) == FLEEING and ValidTarget(target) and GetDistance(target) < spellData.range - 100) or (GetTargetDirection(target) ~= FLEEING and ValidTarget(target) and GetDistance(target) < spellData.range) then
+				if myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
+					local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
+					if HitChance >= 2 then
+						local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+						CastSpellXYZ('Q', x, y, z)
+					end
 				end
 			end
 		end
@@ -178,7 +186,7 @@ YayoBuddy.Ahri = {
 	W = function(target)
 		local spellData = { range = CfgYayoBuddy_Ahri.SpellOptions.wRNG, mana = 50, manaThreshold = CfgYayoBuddy_Ahri.ManaManager.manaW }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeW > 1.0 then
+			if ValidTarget(target, spellData.range) and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeW > 1.0 then
 				CastSpellTarget('W', myHero)
 			end
 		end
@@ -186,11 +194,13 @@ YayoBuddy.Ahri = {
 	E = function(target)
 		local spellData = { range = CfgYayoBuddy_Ahri.SpellOptions.eRNG, width = 60, speed = 1500, delay = 0.25, mana = 85, manaThreshold = CfgYayoBuddy_Ahri.ManaManager.manaE }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeE > 1.0 then
-				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, true)
-				if HitChance >= 2 then
-					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
-					CastSpellXYZ('E', x, y, z)
+			if (GetTargetDirection(target) == FLEEING and ValidTarget(target) and GetDistance(target) < spellData.range - 150) or (GetTargetDirection(target) ~= FLEEING and ValidTarget(target) and GetDistance(target) < spellData.range) then
+				if myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeE > 1.0 then
+					local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, true)
+					if HitChance >= 2 then
+						local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
+						CastSpellXYZ('E', x, y, z)
+					end
 				end
 			end
 		end
@@ -198,8 +208,33 @@ YayoBuddy.Ahri = {
 	R = function(target)
 		local spellData = { range = CfgYayoBuddy_Ahri.SpellOptions.rRNG, mana = 100, manaThreshold = CfgYayoBuddy_Ahri.ManaManager.manaR }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= 100 and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeR > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= 100 and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeR > 1.0 then
 				CastSpellXYZ('R',mousePos.x, mousePos.y, mousePos.z)
+			end
+		end
+	end,
+	rotationDFG = function()
+		for i = 1, objManager:GetMaxHeroes() do
+		local enemy = objManager:GetHero(i)
+			if ValidTarget(enemy, 950) and yayo.Config.AutoCarry then
+				local dmgDFG = getDmg('DFG', enemy, myHero)
+				local dmgQ = getDmg('Q', enemy, myHero, 3) + (getDmg('Q', enemy, myHero, 3)*.20)
+				local dmgR = getDmg('R', enemy, myHero)*3 + ((getDmg('R', enemy, myHero)*.20)*3)
+				if dmgDFG > enemy.health and GetDistance(enemy) < 750 then
+					useDeathfireGrasp(enemy)
+				elseif dmgDFG + dmgQ > enemy.health and myHero.SpellTimeQ > 1.0 and GetDistance(enemy) < 750 then
+					if canCastDFG() then useDeathfireGrasp(enemy) end
+					YayoBuddy.Ahri.Q(enemy)
+				elseif dmgDFG + dmgQ > enemy.health and myHero.SpellTimeR > 1.0 then
+					if canCastDFG then useDeathfireGrasp(enemy) end
+					YayoBuddy.Ahri.R(enemy)
+				elseif dmgDFG + dmgQ + dmgR > enemy.health and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 and myHero.SpellTimeQ > 1.0 and GetDistance(enemy) < 950 then
+					if canCastDFG() then useDeathfireGrasp(enemy) end
+					YayoBuddy.Ahri.R(enemy)
+					YayoBuddy.Ahri.E(enemy)
+					YayoBuddy.Ahri.W(enemy)
+					YayoBuddy.Ahri.Q(enemy)
+				end
 			end
 		end
 	end,
@@ -238,12 +273,13 @@ YayoBuddy.Ahri = {
 		submenu.checkbox('useW', 'W: Fox-Fire', true)
 		submenu.checkbox('useE', 'E: Charm', true)
 		submenu.checkbox('useR', 'R: Spirit Rush', false)
+		submenu.checkbox('useDFG', 'DFG Rotation', true)
 		local submenu = menu.submenu('_LaneClear')
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS CHAMPIONS:')
 		submenu.checkbox('useQ', 'Q: Orb of Deception', true)
 		submenu.checkbox('useW', 'W: Fox-Fire', false)
-		submenu.checkbox('useE', 'E: Charm', true)
+		submenu.checkbox('useE', 'E: Charm', false)
 		submenu.checkbox('useR', 'R: Spirit Rush', false)
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS MINIONS:')
@@ -254,23 +290,23 @@ YayoBuddy.Ahri = {
 		submenu.label('lbl', 'USE VS CHAMPIONS:')
 		submenu.checkbox('useQ', 'Q: Orb of Deception', true)
 		submenu.checkbox('useW', 'W: Fox-Fire', false)
-		submenu.checkbox('useE', 'E: Charm', true)
+		submenu.checkbox('useE', 'E: Charm', false)
 		submenu.checkbox('useR', 'R: Spirit Rush', false)
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS MINIONS:')
 		submenu.checkbox('farmQ', 'Q: Orb of Deception', false)
-		submenu.checkbox('farmW', 'W: Fox-Fire', true)
+		submenu.checkbox('farmW', 'W: Fox-Fire', false)
 		local submenu = menu.submenu('_MixedMode')
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS CHAMPIONS:')
 		submenu.checkbox('useQ', 'Q: Orb of Deception', true)
 		submenu.checkbox('useW', 'W: Fox-Fire', false)
-		submenu.checkbox('useE', 'E: Charm', true)
+		submenu.checkbox('useE', 'E: Charm', false)
 		submenu.checkbox('useR', 'R: Spirit Rush', false)
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS MINIONS:')
-		submenu.checkbox('farmQ', 'Q: Orb of Deception', false)
-		submenu.checkbox('farmW', 'W: Fox-Fire', true)
+		submenu.checkbox('farmQ', 'Q: Orb of Deception', true)
+		submenu.checkbox('farmW', 'W: Fox-Fire', false)
 		local submenu = menu.submenu('ManaManager')
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'MANA MANAGER: VS CHAMPIONS:')
@@ -326,7 +362,7 @@ YayoBuddy.Ahri = {
 		submenu.slider('Enumb', 'Number of Es', 0, 10, 1, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
 		submenu.slider('Rnumb', 'Number of Rs', 0, 10, 3, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
 		submenu.checkbox('ignite', 'Summoner Ignite', true)
-		menu.checkbutton('useItems', 'Use Active Items', true)
+		menu.checkbox('useItems', 'Use Active Items', false)
 		menu.label('lbl1', ' ')
 		menu.label('lbl2', 'CCONNs Yayo Buddy Version '..version)
 		menu.label('lbl3', 'www.facebook.com/CCONN81')
@@ -337,6 +373,8 @@ YayoBuddy.Caitlyn = {
 	OnTick = function(target)
 		YayoBuddy.Caitlyn.Intro()
 		local targetEQ = GetWeakEnemy('PHYS', 1300)
+		if CfgYayoBuddy_Caitlyn.ActiveItems.smartBWC then smartBWC(target) end
+		if CfgYayoBuddy_Caitlyn.ActiveItems.smartBOTRK then smartBOTRK(target) end
 		comboYayoBuddy(P, 3000, 1, YayoBuddy.Caitlyn.Q, 2, YayoBuddy.Caitlyn.W, 3, YayoBuddy.Caitlyn.E, 4, YayoBuddy.Caitlyn.R)
 		if CfgYayoBuddy_Caitlyn.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Caitlyn.Q, 1300, YayoBuddy.Caitlyn.W, 800, YayoBuddy.Caitlyn.E, 950, YayoBuddy.Caitlyn.R, 3000, x) end
 		if CfgYayoBuddy_Caitlyn.useEQ then YayoBuddy.Caitlyn.EQ(targetEQ) end
@@ -349,7 +387,7 @@ YayoBuddy.Caitlyn = {
 	Q = function(target)
 		local spellData = { range = CfgYayoBuddy_Caitlyn.SpellOptions.qRNG, width = 90, speed = 2225, delay = 0.632, mana = (40+(10*myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_Caitlyn.ManaManager.manaQ }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -361,7 +399,7 @@ YayoBuddy.Caitlyn = {
 	W = function(target)
 		local spellData = { range = CfgYayoBuddy_Caitlyn.SpellOptions.wRNG, width = 80, speed = 1960, delay = 0.1, mana = 50, manaThreshold = CfgYayoBuddy_Caitlyn.ManaManager.manaW }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= 50 and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= 50 and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetCircularCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -373,7 +411,7 @@ YayoBuddy.Caitlyn = {
 	E = function(target)
 		local spellData = { range = CfgYayoBuddy_Caitlyn.SpellOptions.eRNG, width = 80, speed = 1960, delay = 0.1, mana = 75, manaThreshold = CfgYayoBuddy_Caitlyn.ManaManager.manaE }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, true)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -386,11 +424,11 @@ YayoBuddy.Caitlyn = {
 		local spellData = { range = getAceRange(), mana = 100, manaThreshold = CfgYayoBuddy_Caitlyn.ManaManager.manaR }
 		if target ~= nil then
 			if CfgYayoBuddy_Caitlyn.SpellOptions.safeR and SafeR() then
-				if GetDistance(myHero, target) > myHero.range and GetDistance(myHero, target) <= spellData.range and myHero.mana >= 100 and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+				if ValidTarget(target) and GetDistance(target) < spellData.range and GetDistance(myHero, target) > myHero.range and myHero.mana >= 100 and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 					CastSpellTarget('R',target)
 				end
 			else
-				if GetDistance(myHero, target) > myHero.range and GetDistance(myHero, target) <= spellData.range and myHero.mana >= 100 and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+				if ValidTarget(target) and GetDistance(target) < spellData.range and GetDistance(myHero, target) > myHero.range and myHero.mana >= 100 and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 					CastSpellTarget('R',target)
 				end
 			end
@@ -399,23 +437,18 @@ YayoBuddy.Caitlyn = {
 	EQ = function(target)
 		local spellQData = { range = CfgYayoBuddy_Caitlyn.SpellOptions.qRNG, width = 90, speed = 2225, delay = 0.632, mana = (40+(10*myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_Caitlyn.ManaManager.manaQ }
 		local spellEData = { range = CfgYayoBuddy_Caitlyn.SpellOptions.eRNG, width = 80, speed = 1960, delay = 0.1, mana = 75, manaThreshold = CfgYayoBuddy_Caitlyn.ManaManager.manaE }
-		if GetDistance(myHero, target) <= spellEData.range and myHero.mana >= spellEData.mana and myHero.mana >= myHero.maxMana * (spellEData.manaThreshold / 100) then
+		if ValidTarget(target, spellEData.range) and myHero.mana >= spellEData.mana and myHero.mana >= myHero.maxMana * (spellEData.manaThreshold / 100) then
 			local CastPosition = Vector(myHero) + (Vector(myHero) - Vector(mousePos.x, mousePos.y, mousePos.z))*(950/GetDistance(mousePos))
 			CastSpellXYZ('E', CastPosition.x, CastPosition.y, CastPosition.z)
 		end
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellQData.range and myHero.mana >= spellQData.mana and myHero.mana >= myHero.maxMana * (spellQData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellQData.range and myHero.mana >= spellQData.mana and myHero.mana >= myHero.maxMana * (spellQData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellQData.delay, spellQData.width, spellQData.range, spellQData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
 					CastSpellXYZ('Q', x, y, z)
 				end
 			end
-		end
-	end,
-	OnProcessSpell = function(unit, spell)
-		if unit ~= nil and spell ~= nil and IsHero(unit) then
-			print("OnProcessSpell detected for "..unit.name.." spell name: "..spell.name)
 		end
 	end,
 	OnDraw = function(target)
@@ -527,6 +560,9 @@ YayoBuddy.Caitlyn = {
 		submenu.slider('Mana_Potion_Value', 'Mana Potion Value', 0, 100, 75, nil, true)
 		submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
 		submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
+		local submenu = menu.submenu('ActiveItems')
+		submenu.checkbox('smartBWC', 'Smart Bilgewater Cutless', true)
+		submenu.checkbox('smartBOTRK', 'Smart Blade of the Ruined King', true)
 		local submenu = menu.submenu('Draw')
 		submenu.checkbox('drawQ', 'Q Range', true)
 		submenu.slider('colorQ', 'Q Range Color:', 1, 6, 4, {"Green","Red", "Aqua", "Light Purple", "Blue", "Dark Purple"})
@@ -555,7 +591,7 @@ YayoBuddy.Caitlyn = {
 }
 
 YayoBuddy.Cassiopeia = {
-	OnTick = function(target) --add MEC ultimate
+	OnTick = function(target) --add MEC ultimate, dfg
 		YayoBuddy.Cassiopeia.Intro()
 		comboYayoBuddy(M, 850, 3, YayoBuddy.Cassiopeia.E, 1, YayoBuddy.Cassiopeia.Q, 2, YayoBuddy.Cassiopeia.W, 4, YayoBuddy.Cassiopeia.R)
 		if CfgYayoBuddy_Cassiopeia.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Cassiopeia.Q, 850, YayoBuddy.Cassiopeia.W, 850, YayoBuddy.Cassiopeia.E, 700, YayoBuddy.Cassiopeia.R, 825, x) end
@@ -565,7 +601,7 @@ YayoBuddy.Cassiopeia = {
 	Q = function(target)
 		local spellData = { range = CfgYayoBuddy_Cassiopeia.SpellOptions.qRNG, width = 80, speed = math.huge, delay = 0.535, mana = (25+(10*myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_Cassiopeia.ManaManager.manaQ }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
 				local CastPosition, HitChance, Position = YP:GetCircularCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -577,7 +613,7 @@ YayoBuddy.Cassiopeia = {
 	W = function(target)
 		local spellData = { range = CfgYayoBuddy_Cassiopeia.SpellOptions.wRNG, width = 80, speed = math.huge, delay = 0.350, mana = (60+(10*myHero.SpellLevelW)), manaThreshold = CfgYayoBuddy_Cassiopeia.ManaManager.manaW }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeW > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeW > 1.0 then
 				local CastPosition, HitChance, Position = YP:GetCircularCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -589,7 +625,7 @@ YayoBuddy.Cassiopeia = {
 	E = function(target)
 		local spellData = { range = CfgYayoBuddy_Cassiopeia.SpellOptions.eRNG, mana = (40+(10*myHero.SpellLevelE)), manaThreshold = CfgYayoBuddy_Cassiopeia.ManaManager.manaE }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeE > 1.0 and DetectPoison(target) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeE > 1.0 and DetectPoison(target) then
 					CastSpellTarget('E', target)
 			end
 		end
@@ -597,7 +633,7 @@ YayoBuddy.Cassiopeia = {
 	R = function(target)
 		local spellData = { range = CfgYayoBuddy_Cassiopeia.SpellOptions.rRNG, width = 350, speed = math.huge, delay = 0.535, mana = 100, manaThreshold = CfgYayoBuddy_Cassiopeia.ManaManager.manaR }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 and GetTargetDirection(target) == CHASING then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 and GetTargetDirection(target) == CHASING then
 				local CastPosition, HitChance, Position = YP:GetConeAOECastPosition(target, spellData.delay, 80, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -668,7 +704,7 @@ YayoBuddy.Cassiopeia = {
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS MINIONS:')
 		submenu.checkbox('farmQ', 'Q: Noxious Blast', true)
-		submenu.checkbox('farmW', 'W: Miasma', true)
+		submenu.checkbox('farmW', 'W: Miasma', false)
 		submenu.checkbox('farmE', 'E: Twin Fang', true)
 		local submenu = menu.submenu('_MixedMode')
 		submenu.label('lbl', '--------------------')
@@ -680,7 +716,7 @@ YayoBuddy.Cassiopeia = {
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS MINIONS:')
 		submenu.checkbox('farmQ', 'Q: Noxious Blast', true)
-		submenu.checkbox('farmW', 'W: Miasma', true)
+		submenu.checkbox('farmW', 'W: Miasma', false)
 		submenu.checkbox('farmE', 'E: Twin Fang', true)
 		local submenu = menu.submenu('ManaManager')
 		submenu.label('lbl', '--------------------')
@@ -747,6 +783,8 @@ YayoBuddy.Cassiopeia = {
 YayoBuddy.Corki = {
 	OnTick = function(target)
 		YayoBuddy.Corki.Intro()
+		if CfgYayoBuddy_Corki.ActiveItems.smartBWC then smartBWC(target) end
+		if CfgYayoBuddy_Corki.ActiveItems.smartBOTRK then smartBOTRK(target) end
 		comboYayoBuddy(P, 1225, 1, YayoBuddy.Corki.Q, 3, YayoBuddy.Corki.E, 4, YayoBuddy.Corki.R, x, x)
 		if CfgYayoBuddy_Corki.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Corki.Q, 825, x, x, YayoBuddy.Corki.E, 600, YayoBuddy.Corki.R, 1225, x) end
 		spellFarm(1225, YayoBuddy.Corki.Q, x, x, YayoBuddy.Corki.R)
@@ -755,7 +793,7 @@ YayoBuddy.Corki = {
 	Q = function(target)
 		local spellData = { range = CfgYayoBuddy_Corki.SpellOptions.qRNG, width = 250, speed = 850, delay = 0.5, mana = (50+(10*myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_Corki.ManaManager.manaQ }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetCircularCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -770,7 +808,7 @@ YayoBuddy.Corki = {
 	E = function(target)
 		local spellData = { range = CfgYayoBuddy_Corki.SpellOptions.eRNG, width = 100, speed = 902, delay = 0.5, mana = 50, manaThreshold = CfgYayoBuddy_Corki.ManaManager.manaE }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetConeAOECastPosition(target, spellData.delay, 35, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -782,7 +820,7 @@ YayoBuddy.Corki = {
 	R = function(target)
 		local spellData = { range = CfgYayoBuddy_Corki.SpellOptions.rRNG, width = 80, speed = 828, delay = 0.5, mana = 20, manaThreshold = CfgYayoBuddy_Corki.ManaManager.manaR }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, true)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -897,6 +935,9 @@ YayoBuddy.Corki = {
 		submenu.slider('Mana_Potion_Value', 'Mana Potion Value', 0, 100, 75, nil, true)
 		submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
 		submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
+		local submenu = menu.submenu('ActiveItems')
+		submenu.checkbox('smartBWC', 'Smart Bilgewater Cutless', true)
+		submenu.checkbox('smartBOTRK', 'Smart Blade of the Ruined King', true)
 		local submenu = menu.submenu('Draw')
 		submenu.checkbox('drawQ', 'Q Range', true)
 		submenu.slider('colorQ', 'Q Range Color:', 1, 6, 4, {"Green","Red", "Aqua", "Light Purple", "Blue", "Dark Purple"})
@@ -921,9 +962,11 @@ YayoBuddy.Corki = {
 	end
 }
 
-YayoBuddy.Ezreal = {
+YayoBuddy.Ezreal = { --muramana
 	OnTick = function(target)
 		YayoBuddy.Ezreal.Intro()
+		if CfgYayoBuddy_Ezreal.ActiveItems.smartBWC then smartBWC(target) end
+		if CfgYayoBuddy_Ezreal.ActiveItems.smartBOTRK then smartBOTRK(target) end
 		comboYayoBuddy(P, 3000, 1, YayoBuddy.Ezreal.Q, 3, YayoBuddy.Ezreal.E, 4, YayoBuddy.Ezreal.R, x, x)
 		if CfgYayoBuddy_Ezreal.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Ezreal.Q, 1150, YayoBuddy.Ezreal.W, 1000, x, 0, YayoBuddy.Ezreal.R, 3000, x) end
 		spellFarm(1150, YayoBuddy.Ezreal.Q, x, x, x)
@@ -935,7 +978,7 @@ YayoBuddy.Ezreal = {
 	Q = function(target)
 		local spellData = { range = CfgYayoBuddy_Ezreal.SpellOptions.qRNG, width = 80, speed = 2000, delay = 0.25, mana = (25+(3*myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_Ezreal.ManaManager.manaQ }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, true)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -947,7 +990,7 @@ YayoBuddy.Ezreal = {
 	W = function(target)
 		local spellData = { range = CfgYayoBuddy_Ezreal.SpellOptions.wRNG, width = 90, speed = 1600, delay = 0.25, mana = (50+(10*myHero.SpellLevelW)), manaThreshold = CfgYayoBuddy_Ezreal.ManaManager.manaW }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -959,7 +1002,7 @@ YayoBuddy.Ezreal = {
 	E = function(target)
 		local spellData = { range = CfgYayoBuddy_Ezreal.SpellOptions.eRNG, mana = 90, manaThreshold = CfgYayoBuddy_Ezreal.ManaManager.manaE }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target, spellData.range) and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				CastSpellXYZ('E', mousePos.x, mousePos.y, mousePos.z)
 			end
 		end
@@ -967,7 +1010,7 @@ YayoBuddy.Ezreal = {
 	R = function(target)
 		local spellData = { range = CfgYayoBuddy_Ezreal.SpellOptions.rRNG, width = 150, speed = 2000, delay = 0.25, mana = 100, manaThreshold = CfgYayoBuddy_Ezreal.ManaManager.manaR }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -1076,6 +1119,9 @@ YayoBuddy.Ezreal = {
 		submenu.slider('Mana_Potion_Value', 'Mana Potion Value', 0, 100, 75, nil, true)
 		submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
 		submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
+		local submenu = menu.submenu('ActiveItems')
+		submenu.checkbox('smartBWC', 'Smart Bilgewater Cutless', true)
+		submenu.checkbox('smartBOTRK', 'Smart Blade of the Ruined King', true)
 		local submenu = menu.submenu('Draw')
 		submenu.checkbox('drawQ', 'Q Range', true)
 		submenu.slider('colorQ', 'Q Range Color:', 1, 6, 4, {"Green","Red", "Aqua", "Light Purple", "Blue", "Dark Purple"})
@@ -1101,6 +1147,8 @@ YayoBuddy.Ezreal = {
 YayoBuddy.Graves = {
 	OnTick = function(target)
 		YayoBuddy.Graves.Intro()
+		if CfgYayoBuddy_Graves.ActiveItems.smartBWC then smartBWC(target) end
+		if CfgYayoBuddy_Graves.ActiveItems.smartBOTRK then smartBOTRK(target) end
 		comboYayoBuddy(P, 1000, 2, YayoBuddy.Graves.W, 3, YayoBuddy.Graves.E, 1, YayoBuddy.Graves.Q, 4, YayoBuddy.Graves.R)
 		if CfgYayoBuddy_Graves.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Graves.Q, 950, x, x, x, x, YayoBuddy.Graves.R, 1000, x) end
 		spellFarm(950, YayoBuddy.Graves.Q, x, x, x)
@@ -1109,7 +1157,7 @@ YayoBuddy.Graves = {
 	Q = function(target)
 		local spellData = { range = CfgYayoBuddy_Graves.SpellOptions.qRNG, width = 100, speed = 902, delay = 0.5, mana = (50+(10 * myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_Graves.ManaManager.manaQ }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -1121,7 +1169,7 @@ YayoBuddy.Graves = {
 	W = function(target)
 		local spellData = { range = CfgYayoBuddy_Graves.SpellOptions.wRNG, width = 250, speed = 1650, delay = 0.5, mana = (65 + (10 * myHero.SpellLevelW)), manaThreshold = CfgYayoBuddy_Graves.ManaManager.manaW }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetCircularCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -1133,7 +1181,7 @@ YayoBuddy.Graves = {
 	E = function(target)
 		local spellData = { range = 950, mana = 40, manaThreshold = CfgYayoBuddy_Graves.ManaManager.manaE }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				CastSpellXYZ('E', mousePos.x, mousePos.y, mousePos.z)
 			end
 		end
@@ -1141,7 +1189,7 @@ YayoBuddy.Graves = {
 	R = function(target)
 		local spellData = { range = CfgYayoBuddy_Graves.SpellOptions.rRNG, width = 100, speed = 1650, delay = 0.5, mana = 100, manaThreshold = CfgYayoBuddy_Graves.ManaManager.manaR }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, true)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -1258,6 +1306,9 @@ YayoBuddy.Graves = {
 		submenu.slider('Mana_Potion_Value', 'Mana Potion Value', 0, 100, 75, nil, true)
 		submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
 		submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
+		local submenu = menu.submenu('ActiveItems')
+		submenu.checkbox('smartBWC', 'Smart Bilgewater Cutless', true)
+		submenu.checkbox('smartBOTRK', 'Smart Blade of the Ruined King', true)
 		local submenu = menu.submenu('Draw')
 		submenu.checkbox('drawQ', 'Q Range', true)
 		submenu.slider('colorQ', 'Q Range Color:', 1, 6, 4, {"Green","Red", "Aqua", "Light Purple", "Blue", "Dark Purple"})
@@ -1286,6 +1337,8 @@ YayoBuddy.KogMaw = {
 	OnTick = function(target)
 		YayoBuddy.KogMaw.Intro()
 		StackReset()
+		if CfgYayoBuddy_KogMaw.ActiveItems.smartBWC then smartBWC(target) end
+		if CfgYayoBuddy_KogMaw.ActiveItems.smartBOTRK then smartBOTRK(target) end
 		comboYayoBuddy(P, 1800, 2, YayoBuddy.KogMaw.W, 3, YayoBuddy.KogMaw.E, 4, YayoBuddy.KogMaw.R, 1, YayoBuddy.KogMaw.Q)
 		if CfgYayoBuddy_KogMaw.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.KogMaw.Q, 1000, x, x, YayoBuddy.KogMaw.E, 1280, YayoBuddy.KogMaw.R, GetRRange(), x) end
 		if CfgYayoBuddy_KogMaw.AutoPotions.AutoPotions_ONOFF then autoPotions(CfgYayoBuddy_KogMaw.AutoPotions.Health_Potion_Value, CfgYayoBuddy_KogMaw.AutoPotions.Chrystalline_Flask_Value, CfgYayoBuddy_KogMaw.AutoPotions.Elixir_of_Fortitude_Value, CfgYayoBuddy_KogMaw.AutoPotions.Mana_Potion_Value) end
@@ -1293,7 +1346,7 @@ YayoBuddy.KogMaw = {
 	Q = function(target)
 		local spellData = { range = CfgYayoBuddy_KogMaw.SpellOptions.qRNG, width = 90, speed = 2225, delay = 0.632, mana = (40+(10*myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_KogMaw.ManaManager.manaQ }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
 				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, true)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -1305,7 +1358,7 @@ YayoBuddy.KogMaw = {
 	W = function(target)
 		local spellData = { range = GetWRange(), mana = (40+(10*myHero.SpellLevelW)), manaThreshold = CfgYayoBuddy_KogMaw.ManaManager.manaW }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeW > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeW > 1.0 then
 				CastSpellTarget('W', myHero)
 			end
 		end
@@ -1313,7 +1366,7 @@ YayoBuddy.KogMaw = {
 	E = function(target)
 		local spellData = { range = CfgYayoBuddy_KogMaw.SpellOptions.eRNG, width = 80, speed = 800, delay = 0.60, mana = 90, manaThreshold = CfgYayoBuddy_KogMaw.ManaManager.manaE }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeE > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeE > 1.0 then
 				local CastPosition, HitChance, Position = YP:GetLineCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -1325,7 +1378,7 @@ YayoBuddy.KogMaw = {
 	R = function(target)
 		local spellData = { range = GetRRange(), width = 100, speed = 1000, delay = 0.25, mana = 40, manaThreshold = CfgYayoBuddy_KogMaw.ManaManager.manaR } --add stack count to mana equation
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeR > 1.0 and StackCheck() then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeR > 1.0 and StackCheck() then
 				local CastPosition, HitChance, Position = YP:GetCircularCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -1435,6 +1488,9 @@ YayoBuddy.KogMaw = {
 		submenu.slider('Mana_Potion_Value', 'Mana Potion Value', 0, 100, 75, nil, true)
 		submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
 		submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
+		local submenu = menu.submenu('ActiveItems')
+		submenu.checkbox('smartBWC', 'Smart Bilgewater Cutless', true)
+		submenu.checkbox('smartBOTRK', 'Smart Blade of the Ruined King', true)
 		local submenu = menu.submenu('Draw')
 		submenu.checkbox('drawQ', 'Q Range', true)
 		submenu.slider('colorQ', 'Q Range Color:', 1, 6, 4, {"Green","Red", "Aqua", "Light Purple", "Blue", "Dark Purple"})
@@ -1462,6 +1518,8 @@ YayoBuddy.KogMaw = {
 YayoBuddy.MasterYi = {
 	OnTick = function(target)
 		YayoBuddy.MasterYi.Intro()
+		if CfgYayoBuddy_MasterYi.ActiveItems.smartBWC then smartBWC(target) end
+		if CfgYayoBuddy_MasterYi.ActiveItems.smartBOTRK then smartBOTRK(target) end
 		comboYayoBuddy(P, 600, 1, YayoBuddy.MasterYi.Q, 4, YayoBuddy.MasterYi.R, 3, YayoBuddy.MasterYi.E, x, x)
 		if CfgYayoBuddy_MasterYi.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.MasterYi.Q, 600, x, 0, x, 0, x, 0, x) end
 		spellFarm(600, YayoBuddy.MasterYi.Q, x, x, x)
@@ -1473,7 +1531,7 @@ YayoBuddy.MasterYi = {
 	Q = function(target)
 		local spellData = { range = CfgYayoBuddy_MasterYi.SpellOptions.qRNG, mana = (50+(10*myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_MasterYi.ManaManager.manaQ }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
 				CastSpellTarget('Q', target)
 			end
 		end
@@ -1481,7 +1539,7 @@ YayoBuddy.MasterYi = {
 	W = function(target)
 		local spellData = { range = 125, mana = 50, manaThreshold = CfgYayoBuddy_MasterYi.ManaManager.manaW }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeW > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeW > 1.0 then
 				CastSpellTarget('W', myHero)
 			end
 		end
@@ -1489,7 +1547,7 @@ YayoBuddy.MasterYi = {
 	E = function(target)
 		local spellData = { range = myHero.range }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.SpellTimeE > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.SpellTimeE > 1.0 then
 				CastSpellTarget('E', myHero)
 			end
 		end
@@ -1497,7 +1555,7 @@ YayoBuddy.MasterYi = {
 	R = function(target)
 		local spellData = { range = myHero.range, mana = 100, manaThreshold = CfgYayoBuddy_MasterYi.ManaManager.manaR }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeR > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeR > 1.0 then
 				CastSpellTarget('R',myHero)
 			end
 		end
@@ -1598,6 +1656,9 @@ YayoBuddy.MasterYi = {
 		submenu.slider('Mana_Potion_Value', 'Mana Potion Value', 0, 100, 75, nil, true)
 		submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
 		submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
+		local submenu = menu.submenu('ActiveItems')
+		submenu.checkbox('smartBWC', 'Smart Bilgewater Cutless', true)
+		submenu.checkbox('smartBOTRK', 'Smart Blade of the Ruined King', true)
 		local submenu = menu.submenu('Draw')
 		submenu.checkbox('drawQ', 'Q Range', true)
 		submenu.slider('colorQ', 'Q Range Color:', 1, 6, 4, {"Green","Red", "Aqua", "Light Purple", "Blue", "Dark Purple"})
@@ -1635,6 +1696,15 @@ YayoBuddy.Leblanc = {
 			--if GetDistance(target) > spellData.range or myHero.mana < (spellData.mana or myHero.maxMana * (spellData.manaThreshold / 100)) then 
 				return false
 			--end
+		end
+		if yayo.Config.AutoCarry and CfgYayoBuddy_Leblanc._AutoCarry.useDFG and IsHero(target) and checkDFG() then
+			local dmgDFG = getDmg('DFG', target, myHero)
+			local dmgQ = getDmg('Q', target, myHero, 3) + (getDmg('Q', target, myHero, 3)*.20)
+			local dmgR = getDmg('R', target, myHero, 1) + (getDmg('R', target, myHero, 1)*.20)
+			if dmgDFG + dmgQ + dmgR > target.health then
+				if canCastDFG() then useDeathfireGrasp(enemy) end
+				CastSpellTarget('Q', target)
+			end
 		end
 		CastSpellTarget('Q', target)
 		if (myHero.SpellLevelQ < 1 and myHero.SpellTimeQ < 1.0) and (myHero.SpellLevelQ < 1 and myHero.SpellTimeR > 1.0) then
@@ -1763,6 +1833,7 @@ YayoBuddy.Leblanc = {
 		submenu.checkbox('useW', 'W: Distortion', true)
 		submenu.checkbox('useE', 'E: Ethereal Chains', true)
 		submenu.checkbox('useR', 'R: Mimic', true)
+		submenu.checkbox('useDFG', 'DFG Rotation', true)
 		local submenu = menu.submenu('_LaneClear')
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS CHAMPIONS:')
@@ -1871,6 +1942,8 @@ YayoBuddy.MissFortune = {
 	OnTick = function(target)
 		YayoBuddy.MissFortune.Intro()
 		bulletTimeReset()
+		if CfgYayoBuddy_MissFortune.ActiveItems.smartBWC then smartBWC(target) end
+		if CfgYayoBuddy_MissFortune.ActiveItems.smartBOTRK then smartBOTRK(target) end
 		comboYayoBuddy(P, 1400, 2, YayoBuddy.MissFortune.W, 1, YayoBuddy.MissFortune.Q, 3, YayoBuddy.MissFortune.E, 4, YayoBuddy.MissFortune.R)
 		if CfgYayoBuddy_MissFortune.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.MissFortune.Q, 650, x, x, YayoBuddy.MissFortune.E, 800, YayoBuddy.MissFortune.R, 1400, x) end
 		spellFarm(650, YayoBuddy.MissFortune.Q, x, x, x)
@@ -1879,7 +1952,7 @@ YayoBuddy.MissFortune = {
 	Q = function(target)
 		local spellData = { range = CfgYayoBuddy_MissFortune.SpellOptions.qRNG, mana = (40+(3*myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_MissFortune.ManaManager.manaQ }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				CastSpellTarget('Q', target)
 			end
 		end
@@ -1887,7 +1960,7 @@ YayoBuddy.MissFortune = {
 	W = function(target)
 		local spellData = { range = CfgYayoBuddy_MissFortune.SpellOptions.wRNG, mana = (25 + (5 * myHero.SpellLevelW)), manaThreshold = CfgYayoBuddy_MissFortune.ManaManager.manaW }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				CastSpellTarget('W', myHero)
 			end
 		end
@@ -1895,7 +1968,7 @@ YayoBuddy.MissFortune = {
 	E = function(target)
 		local spellData = { range = CfgYayoBuddy_MissFortune.SpellOptions.eRNG, width = 300, speed = 500, delay = 0.5, mana = 80, manaThreshold = CfgYayoBuddy_MissFortune.ManaManager.manaE }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				local CastPosition, HitChance, Position = YP:GetCircularCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -1908,7 +1981,7 @@ YayoBuddy.MissFortune = {
 		local spellData = { range = CfgYayoBuddy_MissFortune.SpellOptions.rRNG, width = 100, speed = 780, delay = 0.333, mana = 100, manaThreshold = CfgYayoBuddy_MissFortune.ManaManager.manaR }
 		if target ~= nil then
 			if CfgYayoBuddy_MissFortune.SpellOptions.safeR and SafeR() then
-				if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 then
+				if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 then
 					local CastPosition, HitChance, Position = YP:GetConeAOECastPosition(target, spellData.delay, 30, spellData.range, spellData.speed, myHero, false)
 					if HitChance >= 2 then
 						local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -1919,14 +1992,13 @@ YayoBuddy.MissFortune = {
 					end
 				end
 			else
-				if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 then
+				if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 then
 				local CastPosition, HitChance, Position = YP:GetConeAOECastPosition(target, spellData.delay, 30, spellData.range, spellData.speed, myHero, false)
 					if HitChance >= 2 then
 						local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
 						CastSpellXYZ('R', x, y, z)
 						yayo.DisableAttacks()
 						yayo.DisableMove()
-						--timer_BT = os.clock()
 					end
 				end
 			end
@@ -2044,6 +2116,9 @@ YayoBuddy.MissFortune = {
 		submenu.slider('Mana_Potion_Value', 'Mana Potion Value', 0, 100, 75, nil, true)
 		submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
 		submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
+		local submenu = menu.submenu('ActiveItems')
+		submenu.checkbox('smartBWC', 'Smart Bilgewater Cutless', true)
+		submenu.checkbox('smartBOTRK', 'Smart Blade of the Ruined King', true)
 		local submenu = menu.submenu('Draw')
 		submenu.checkbox('drawQ', 'Q Range', true)
 		submenu.slider('colorQ', 'Q Range Color:', 1, 6, 4, {"Green","Red", "Aqua", "Light Purple", "Blue", "Dark Purple"})
@@ -2086,7 +2161,7 @@ YayoBuddy.Ryze = {
 	Q = function(target)
 		local spellData = { range = CfgYayoBuddy_Ryze.SpellOptions.qRNG, mana = 60, manaThreshold = CfgYayoBuddy_Ryze.ManaManager.manaQ }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
 				CastSpellTarget('Q', target)
 			end
 		end
@@ -2094,7 +2169,7 @@ YayoBuddy.Ryze = {
 	W = function(target)
 		local spellData = { range = CfgYayoBuddy_Ryze.SpellOptions.wRNG, mana = (50 + (10 * myHero.SpellLevelW)), manaThreshold = CfgYayoBuddy_Ryze.ManaManager.manaW }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeW > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeW > 1.0 then
 				CastSpellTarget('W', target)
 			end
 		end
@@ -2102,7 +2177,7 @@ YayoBuddy.Ryze = {
 	E = function(target)
 		local spellData = { range = CfgYayoBuddy_Ryze.SpellOptions.eRNG, mana = (70 + (10 * myHero.SpellLevelW)), manaThreshold = CfgYayoBuddy_Ryze.ManaManager.manaE }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeE > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeE > 1.0 then
 				CastSpellTarget('E', target)
 			end
 		end
@@ -2110,7 +2185,7 @@ YayoBuddy.Ryze = {
 	R = function(target)
 		local spellData = { range = CfgYayoBuddy_Ryze.SpellOptions.rRNG }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 and myHero.SpellTimeQ < 1.0 and myHero.SpellTimeW < 1.0 and myHero.SpellTimeE < 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 and myHero.SpellTimeQ < 1.0 and myHero.SpellTimeW < 1.0 and myHero.SpellTimeE < 1.0 then
 				CastSpellTarget('R',myHero)
 			end
 		end
@@ -2266,6 +2341,9 @@ YayoBuddy.Ryze = {
 YayoBuddy.Teemo = {
 	OnTick = function(target)
 		YayoBuddy.Teemo.Intro()
+		if CfgYayoBuddy_Teemo.ActiveItems.smartBWC then smartBWC(target) end
+		if CfgYayoBuddy_Teemo.ActiveItems.smartBOTRK then smartBOTRK(target) end
+		if CfgYayoBuddy_Teemo._AutoCarry.useDFG then YayoBuddy.Teemo.rotationDFG(target) end
 		comboYayoBuddy(M, 580, 1, YayoBuddy.Teemo.Q, 2, YayoBuddy.Teemo.W, x, x, 4, YayoBuddy.Teemo.R)
 		if CfgYayoBuddy_Teemo.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Teemo.Q, 580, x, 0, x, 0, YayoBuddy.Teemo.R, 230, x) end
 		spellFarm(580, YayoBuddy.Teemo.Q2, x, x, x)
@@ -2277,7 +2355,7 @@ YayoBuddy.Teemo = {
 	Q = function(target)
 		local spellData = { range = CfgYayoBuddy_Teemo.SpellOptions.qRNG, mana = (60 + (10 * myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_Teemo.ManaManager.manaQ }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and GetDistance(myHero, target) > myHero.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and GetDistance(target) > myHero.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
 				CastSpellTarget('Q', target)
 			end
 		end
@@ -2285,7 +2363,7 @@ YayoBuddy.Teemo = {
 	Q2 = function(target)
 		local spellData = { range = CfgYayoBuddy_Teemo.SpellOptions.qRNG, mana = (60 + (10 * myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_Teemo.ManaManager.manaQ }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= myHero.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
+			if ValidTarget(target) and GetDistance(myHero, target) <= myHero.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeQ > 1.0 then
 				CastSpellTarget('Q', target)
 			end
 		end
@@ -2293,7 +2371,7 @@ YayoBuddy.Teemo = {
 	W = function(target)
 		local spellData = { range = CfgYayoBuddy_Teemo.SpellOptions.wRNG, mana = 40, manaThreshold = CfgYayoBuddy_Teemo.ManaManager.manaW }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeW > 1.0 then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeW > 1.0 then
 				CastSpellTarget('W', myHero)
 			end
 		end
@@ -2304,11 +2382,25 @@ YayoBuddy.Teemo = {
 	R = function(target)
 		local spellData = { range = 230, width = 60, speed = math.huge, delay = 0.1, mana = (50 + (25 * myHero.SpellLevelR)), manaThreshold = CfgYayoBuddy_Teemo.ManaManager.manaR }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeR > 1.0 then
+			if ValidTarget(target) and GetDistance(target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) and myHero.SpellTimeR > 1.0 then
 				local CastPosition, HitChance, Position = YP:GetCircularCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 				if HitChance >= 2 then
 					local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
 					CastSpellXYZ('R', x, y, z)
+				end
+			end
+		end
+	end,
+	rotationDFG = function(target)
+		if target ~= nil then
+			if yayo.Config.AutoCarry and IsHero(target) and checkDFG() and GetDistance(target) < 750 then
+				local dmgDFG = getDmg('DFG', target, myHero)
+				local dmgQ = getDmg('Q', target, myHero) + (getDmg('Q', target, myHero)*.20)
+				if dmgDFG > target.health then
+					if canCastDFG() then useDeathfireGrasp(enemy) end
+				elseif dmgDFG + dmgQ > target.health and myHero.SpellTimeQ > 1.0 then
+					if canCastDFG() then useDeathfireGrasp(enemy) end
+					CastSpellTarget('Q', target)
 				end
 			end
 		end
@@ -2350,6 +2442,7 @@ YayoBuddy.Teemo = {
 		submenu.checkbox('useW', 'W: Move Quick', true)
 		submenu.checkbox('useE', 'E: Toxic Shot', false)
 		submenu.checkbox('useR', 'R: Noxious Trap', true)
+		submenu.checkbox('useDFG', 'DFG Rotation', true)
 		local submenu = menu.submenu('_LaneClear')
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS CHAMPIONS:')
@@ -2417,6 +2510,9 @@ YayoBuddy.Teemo = {
 		submenu.slider('Mana_Potion_Value', 'Mana Potion Value', 0, 100, 75, nil, true)
 		submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
 		submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
+		local submenu = menu.submenu('ActiveItems')
+		submenu.checkbox('smartBWC', 'Smart Bilgewater Cutless', true)
+		submenu.checkbox('smartBOTRK', 'Smart Blade of the Ruined King', true)
 		local submenu = menu.submenu('Draw')
 		submenu.checkbox('drawQ', 'Q Range', true)
 		submenu.slider('colorQ', 'Q Range Color:', 1, 6, 4, {"Green","Red", "Aqua", "Light Purple", "Blue", "Dark Purple"})
@@ -2443,9 +2539,11 @@ YayoBuddy.Teemo = {
 	end
 }
 
-YayoBuddy.Tristana = {
+YayoBuddy.Tristana = { -- add r interrupt and anti gap closer
 	OnTick = function(target)
 		YayoBuddy.Tristana.Intro()
+		if CfgYayoBuddy_Tristana.ActiveItems.smartBWC then smartBWC(target) end
+		if CfgYayoBuddy_Tristana.ActiveItems.smartBOTRK then smartBOTRK(target) end
 		if CfgYayoBuddy_Tristana.TristMode == 1 then
 			comboYayoBuddy(P, 900, 1, YayoBuddy.Tristana.Q, 2, YayoBuddy.Tristana.W, 3, YayoBuddy.Tristana.E, 4, YayoBuddy.Tristana.R)
 		elseif CfgYayoBuddy_Tristana.TristMode == 2 then
@@ -2461,7 +2559,7 @@ YayoBuddy.Tristana = {
 	Q = function(target)
 		local spellData = { range = myHero.range, mana = 0 }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana then
+			if ValidTarget(target) and GetDistance(target) <= spellData.range and myHero.mana >= spellData.mana then
 				CastSpellTarget('Q', myHero)
 			end
 		end
@@ -2469,7 +2567,7 @@ YayoBuddy.Tristana = {
 	W = function(target)
 		local spellData = { range = CfgYayoBuddy_Tristana.SpellOptions.wRNG, width = 270, speed = 1150, delay = 0.5, mana = 60, manaThreshold = CfgYayoBuddy_Tristana.ManaManager.manaW }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= 50 and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= 50 and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				if CfgYayoBuddy_Tristana.SpellOptions.safeW and SafeW(target) then
 					if CfgYayoBuddy_Tristana.SpellOptions.RocketMode == 1 then
 						CastSpellXYZ('W', mousePos.x, mousePos.y, mousePos.z)
@@ -2497,7 +2595,7 @@ YayoBuddy.Tristana = {
 	E = function(target)
 		local spellData = { range = 550, mana = (40 + (10 * myHero.SpellLevel * 10)), manaThreshold = CfgYayoBuddy_Tristana.ManaManager.manaE }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) <= spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				CastSpellTarget('E', target)
 			end
 		end
@@ -2505,7 +2603,7 @@ YayoBuddy.Tristana = {
 	R = function(target)
 		local spellData = { range = myHero.range, mana = 100, manaThreshold = CfgYayoBuddy_Tristana.ManaManager.manaR }
 		if target ~= nil then
-			if GetDistance(myHero, target) <= spellData.range and myHero.mana >= 100 and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+			if ValidTarget(target) and GetDistance(target) <= spellData.range and myHero.mana >= 100 and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 				CastSpellTarget('R',target)
 			end
 		end
@@ -2622,6 +2720,9 @@ YayoBuddy.Tristana = {
 		submenu.slider('Mana_Potion_Value', 'Mana Potion Value', 0, 100, 75, nil, true)
 		submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
 		submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
+		local submenu = menu.submenu('ActiveItems')
+		submenu.checkbox('smartBWC', 'Smart Bilgewater Cutless', true)
+		submenu.checkbox('smartBOTRK', 'Smart Blade of the Ruined King', true)
 		local submenu = menu.submenu('Draw')
 		submenu.checkbox('drawW', 'W Range', true)
 		submenu.slider('colorW', 'W Range Color:', 1, 6, 5, {"Green","Red", "Aqua", "Light Purple", "Blue", "Dark Purple"})
@@ -2824,7 +2925,7 @@ YayoBuddy.Vayne = {
 YayoBuddy.Veigar = {
 	OnTick = function(target)
 		YayoBuddy.Veigar.Intro()
-		YayoBuddy.Veigar.DFGandUltTest()
+		if CfgYayoBuddy_Veigar._AutoCarry.useDFG and yayo.Config.AutoCarry and checkDFG() then YayoBuddy.Veigar.rotationDFG() end
 		comboYayoBuddy(M, 900, 3, YayoBuddy.Veigar.E, 2, YayoBuddy.Veigar.W, 4, YayoBuddy.Veigar.R, 1, YayoBuddy.Veigar.Q)
 		if CfgYayoBuddy_Veigar.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Veigar.Q, 650, YayoBuddy.Veigar.W, 650, YayoBuddy.Veigar.E, 900, YayoBuddy.Veigar.R, 650, x) end
 		spellFarm(650, YayoBuddy.Veigar.Q, YayoBuddy.Veigar.W, x, x)
@@ -2835,7 +2936,7 @@ YayoBuddy.Veigar = {
 		if target == nil or myHero.SpellLevelQ < 1 or myHero.SpellTimeQ < 1.0 or GetDistance(target) > spellData.range then
 			return false
 		end
-		if myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+		if ValidTarget(target) and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 			CastSpellTarget('Q', target)
 		end
 	end,
@@ -2847,7 +2948,7 @@ YayoBuddy.Veigar = {
 		if GetTargetDirection(target) ~= STATIONARY then
 			return false
 		end
-		if myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+		if ValidTarget(target) and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 			local CastPosition, HitChance, Position = YP:GetCircularCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 			if HitChance >= 2 then
 				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -2860,7 +2961,7 @@ YayoBuddy.Veigar = {
 		if target == nil or myHero.SpellLevelE < 1 or myHero.SpellTimeE < 1.0 or GetDistance(target) > spellData.range then
 			return false
 		end
-		if myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+		if ValidTarget(target) and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 			local CastPosition, HitChance, Position = YP:GetCircularCastPosition(target, spellData.delay, spellData.width, spellData.range, spellData.speed, myHero, false)
 			if HitChance >= 2 then
 				local x, y, z = CastPosition.x, CastPosition.y, CastPosition.z
@@ -2873,26 +2974,29 @@ YayoBuddy.Veigar = {
 		if target == nil or myHero.SpellLevelR < 1 or myHero.SpellTimeR < 1.0 or GetDistance(target) > spellData.range then
 			return false
 		end
-		if myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+		if ValidTarget(target) and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
 			CastSpellTarget('R', target)
 		end
 	end,
-	BeforeAttack = function(target)
-		spellFarm(650, YayoBuddy.Veigar.Q, x, x, x)
-	end,
-	DFGandUltTest = function()
+	rotationDFG = function()
 		for i = 1, objManager:GetMaxHeroes() do
 		local enemy = objManager:GetHero(i)
-			if (enemy and enemy.team ~= myHero.team and enemy.visible == 1 and enemy.invulnerable == 0 and enemy.dead == 0) then
-				local DFGdmg = getDmg('DFG', enemy, myHero)
-				local Rdmg = getDmg('R', enemy, myHero)+(getDmg('R', enemy, myHero)*.20)
-				if DFGdmg + Rdmg > enemy.health and GetDistance(enemy) < 650 then
-					useDeathfireGrasp(enemy)
+			if ValidTarget(enemy) and GetDistance(enemy) <= 650 then
+				local dmgDFG = getDmg('DFG', enemy, myHero)
+				local dmgQ = getDmg('Q', enemy, myHero) + (getDmg('Q', enemy, myHero)*.20)
+				local dmgR = getDmg('R', enemy, myHero) + (getDmg('R', enemy, myHero)*.20)
+				if dmgDFG > enemy.health then
+					if canCastDFG() then useDeathfireGrasp(enemy) end
+				elseif dmgDFG + dmgQ > enemy.health and myHero.SpellTimeQ > 1.0 then
+					if canCastDFG() then useDeathfireGrasp(enemy) end
+					YayoBuddy.Veigar.Q(enemy)
+				elseif dmgDFG + dmgQ + dmgR > enemy.health and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 and myHero.SpellTimeQ > 1.0 then
+					if canCastDFG() then useDeathfireGrasp(enemy) end
 					YayoBuddy.Veigar.R(enemy)
+					YayoBuddy.Veigar.Q(enemy)
 				end
 			end
 		end
-
 	end,
 	OnDraw = function(target)
 		if CfgYayoBuddy_Veigar.Draw.drawQ and CfgYayoBuddy_Veigar.Draw.qType == 1 then
@@ -2906,9 +3010,6 @@ YayoBuddy.Veigar = {
 				DrawCircleObject(myHero, CfgYayoBuddy_Veigar.SpellOptions.qRNG, CfgYayoBuddy_Veigar.Draw.colorQ)
 			end
 		end
---		if myHero.SpellTimeQ > 1.0 and myHero.SpellLevelQ >= 1 and CfgYayoBuddy_Veigar.Draw.drawQ then
---			DrawCircleObject(myHero, CfgYayoBuddy_Veigar.SpellOptions.qRNG, CfgYayoBuddy_Veigar.Draw.colorQ)
---		end
 		if CfgYayoBuddy_Veigar.Draw.drawW and CfgYayoBuddy_Veigar.Draw.wType == 1 then
 			if myHero.SpellLevelW >= 1 and myHero.SpellTimeW < -1 then
 				DrawCircleObject(myHero, (CfgYayoBuddy_Veigar.SpellOptions.wRNG/(-myHero.SpellTimeW*-myHero.SpellTimeW)), CfgYayoBuddy_Veigar.Draw.colorW)
@@ -2920,9 +3021,6 @@ YayoBuddy.Veigar = {
 				DrawCircleObject(myHero, CfgYayoBuddy_Veigar.SpellOptions.wRNG, CfgYayoBuddy_Veigar.Draw.colorW)
 			end
 		end
---		if myHero.SpellTimeW > 1.0 and myHero.SpellLevelW >= 1 and CfgYayoBuddy_Veigar.Draw.drawW then
---			DrawCircleObject(myHero, CfgYayoBuddy_Veigar.SpellOptions.wRNG, CfgYayoBuddy_Veigar.Draw.colorW)
---		end
 		if CfgYayoBuddy_Veigar.Draw.drawE and CfgYayoBuddy_Veigar.Draw.eType == 1 then
 			if myHero.SpellLevelE >= 1 and myHero.SpellTimeE < -1 then
 				DrawCircleObject(myHero, (CfgYayoBuddy_Veigar.SpellOptions.eRNG/(-myHero.SpellTimeE*-myHero.SpellTimeE)), CfgYayoBuddy_Veigar.Draw.colorE)
@@ -2934,9 +3032,6 @@ YayoBuddy.Veigar = {
 				DrawCircleObject(myHero, CfgYayoBuddy_Veigar.SpellOptions.eRNG, CfgYayoBuddy_Veigar.Draw.colorE)
 			end
 		end
---		if myHero.SpellTimeE > 1.0 and myHero.SpellLevelE >= 1 and CfgYayoBuddy_Veigar.Draw.drawE then
---			DrawCircleObject(myHero, CfgYayoBuddy_Veigar.SpellOptions.eRNG, CfgYayoBuddy_Veigar.Draw.colorE)
---		end
 		if CfgYayoBuddy_Veigar.Draw.drawR and CfgYayoBuddy_Veigar.Draw.rType == 1 then
 			if myHero.SpellLevelR >= 1 and myHero.SpellTimeR < -1 then
 				DrawCircleObject(myHero, (CfgYayoBuddy_Veigar.SpellOptions.rRNG/(-myHero.SpellTimeR*-myHero.SpellTimeR)), CfgYayoBuddy_Veigar.Draw.colorR)
@@ -2948,9 +3043,6 @@ YayoBuddy.Veigar = {
 				DrawCircleObject(myHero, CfgYayoBuddy_Veigar.SpellOptions.rRNG, CfgYayoBuddy_Veigar.Draw.colorR)
 			end
 		end
---		if myHero.SpellTimeR > 1.0 and myHero.SpellLevelR >= 1 and CfgYayoBuddy_Veigar.Draw.drawR then
---			DrawCircleObject(myHero, CfgYayoBuddy_Veigar.SpellOptions.rRNG, CfgYayoBuddy_Veigar.Draw.colorR)
---		end
 		if CfgYayoBuddy_Veigar.RoamHelper.Enable then roamHelper(CfgYayoBuddy_Veigar.RoamHelper.AAnumb, CfgYayoBuddy_Veigar.RoamHelper.Qnumb, CfgYayoBuddy_Veigar.RoamHelper.Wnumb, CfgYayoBuddy_Veigar.RoamHelper.Enumb, CfgYayoBuddy_Veigar.RoamHelper.Rnumb, CfgYayoBuddy_Veigar.RoamHelper.ignite) end
 	end,
 	Intro = function()
@@ -2973,6 +3065,7 @@ YayoBuddy.Veigar = {
 		submenu.checkbox('useW', 'W: Dark Matter', true)
 		submenu.checkbox('useE', 'E: Event Horizon', true)
 		submenu.checkbox('useR', 'R: Primordial Burst', false)
+		submenu.checkbox('useDFG', 'DFG Rotation', true)
 		local submenu = menu.submenu('_LaneClear')
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS CHAMPIONS:')
@@ -3027,7 +3120,7 @@ YayoBuddy.Veigar = {
 		submenu.checkbutton('ks_ONOFF', 'Enable Kill Steals', true)
 		submenu.checkbox('ksQ', 'Kill Steal with Q', true)
 		submenu.checkbox('ksW', 'Kill Steal with W', true)
-		submenu.checkbox('ksE', 'Kill Steal with E', true)
+		submenu.label('ksE', 'Cannot KS with E', false)
 		submenu.checkbox('ksR', 'Kill Steal with R', true)
 		submenu.checkbox('ksI', 'Kill Steal with Ignite', true)
 		submenu.label('lbl', ' ')
@@ -3062,10 +3155,10 @@ YayoBuddy.Veigar = {
 		submenu.slider('AAnumb', 'Number of AAs', 0, 10, 0, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
 		submenu.slider('Qnumb', 'Number of Qs', 0, 10, 1, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
 		submenu.slider('Wnumb', 'Number of Ws', 0, 10, 1, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
-		submenu.slider('Enumb', 'Number of Es', 0, 10, 0, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
+		submenu.label('Enumb', 'E has no damage', 0)
 		submenu.slider('Rnumb', 'Number of Rs', 0, 10, 1, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
 		submenu.checkbox('ignite', 'Summoner Ignite', true)
-		menu.checkbutton('useItems', 'Use Active Items', true)
+		menu.checkbutton('useItems', 'Use Active Items', false)
 		menu.label('lbl1', ' ')
 		menu.label('lbl2', 'CCONNs Yayo Buddy Version '..version)
 		menu.label('lbl3', 'www.facebook.com/CCONN81')
@@ -3092,6 +3185,20 @@ function smartBWC(target)
 	local dmgBWC = getDmg('BWC', target, myHero)
 	local healthMissing = (myHero.maxHealth - myHero.health)
 	if healthMissing >= dmgBWC and GetDistance(target) <= 450 then useBWC(target) end  
+end
+
+function checkDFG()
+	if GetInventorySlot(3128) ~= nil then
+		return true
+	end
+	return false
+end
+
+function canCastDFG()
+	if CanCastSpell(GetInventorySlot(3128)) then
+		return true
+	end
+	return false
 end
 
 function useDeathfireGrasp(target)
@@ -3336,7 +3443,7 @@ function autoPotions(healthval, flaskval, elixirval, manaval)
 	if bluePill == nil then
 		if menu.AutoPotions.Health_Potion_ONOFF and myHero.health <= myHero.maxHealth * (healthval / 100) and GetClock() > timerHealth + 15000 then
 			UseItemOnTarget(2003, myHero)
-			UseItemOnTarget(2009, myHero)
+			UseItemOnTarget(2010, myHero)
 			timerHealth = GetClock()
 		elseif menu.AutoPotions.Chrystalline_Flask_ONOFF and myHero.health <= myHero.maxHealth * (flaskval / 100) and GetClock() > timerFlask + 10000 then 
 			UseItemOnTarget(2041, myHero)
