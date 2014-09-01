@@ -598,7 +598,7 @@ YayoBuddy.Annie = {
 		submenu.checkbox('useQ', 'Q: Disintegrate', true)
 		submenu.checkbox('useW', 'W: Incinerate', true)
 		submenu.label('useE', 'E: N/A', false)
-		submenu.checkbox('useR', 'R: Summon Tibbers', false)
+		submenu.checkbox('useR', 'R: Summon Tibbers', true)
 		submenu.checkbox('useDFG', 'DFG Rotation', true)
 		local submenu = menu.submenu('_LaneClear')
 		submenu.label('lbl', '--------------------')
