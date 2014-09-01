@@ -1,5 +1,7 @@
 local scriptName = "YayoBuddy"
-local version = "2.8.1"
+local version = "2.9.0"
+
+-- yupdate = Yayo_Buddy_by_CCONN.lua 2.9 https://raw.githubusercontent.com/cconn81/LeagueBot/master/Yayo_Buddy_by_CCONN.lua https://raw.githubusercontent.com/cconn81/LeagueBot/master/Version%20Numbers/Yayo_Buddy_Version.lua
 
 require 'yprediction'
 require 'spell_damage'
@@ -19,6 +21,9 @@ local stacks, timer_R = 0, os.time()
 local FLEEING, CHASING, STATIONARY = 0, 1, 2
 local wTime, returnReady, lastCastQ = 0, 0, 0
 local introTimer = GetClock()
+local pyromaniaActive = false
+local recallActive, recallTimer = false, 0
+local dfgTimer = 0
 
 function OnDraw()
 	local target = yayo.GetTarget()
@@ -92,13 +97,13 @@ function Init()
 end
 
 -------------------CHAMPION SECTION
-YayoBuddy.Unsupported = { --add botrk
+YayoBuddy.Unsupported = {
 	OnTick = function(target)
 		YayoBuddy.Unsupported.Intro()
 	end,
 	OnDraw = function(target)
-		if CfgYayoBuddy_Unsupported.ActiveItems.smartBWC then smartBWC(target) end
-		if CfgYayoBuddy_Unsupported.ActiveItems.smartBOTRK then smartBOTRK(target) end
+		if CfgYayoBuddy_Unsupported.ActiveItems.smartBWC and yayo.Config.AutoCarry then smartBWC(target) end
+		if CfgYayoBuddy_Unsupported.ActiveItems.smartBOTRK and yayo.Config.AutoCarry then smartBOTRK(target) end
 		if CfgYayoBuddy_Unsupported.RoamHelper.Enable then roamHelper(CfgYayoBuddy_Unsupported.RoamHelper.AAnumb, CfgYayoBuddy_Unsupported.RoamHelper.Qnumb, CfgYayoBuddy_Unsupported.RoamHelper.Wnumb, CfgYayoBuddy_Unsupported.RoamHelper.Enumb, CfgYayoBuddy_Unsupported.RoamHelper.Rnumb, CfgYayoBuddy_Unsupported.RoamHelper.ignite) end
 		if CfgYayoBuddy_Unsupported.AutoPotions.AutoPotions_ONOFF then autoPotions(CfgYayoBuddy_Unsupported.AutoPotions.Health_Potion_Value, CfgYayoBuddy_Unsupported.AutoPotions.Chrystalline_Flask_Value, CfgYayoBuddy_Unsupported.AutoPotions.Elixir_of_Fortitude_Value, CfgYayoBuddy_Unsupported.AutoPotions.Mana_Potion_Value) end
 	end,
@@ -136,6 +141,7 @@ YayoBuddy.Unsupported = { --add botrk
 		submenu.slider('Enumb', 'Number of Es', 0, 10, 2, {"0", "1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
 		submenu.slider('Rnumb', 'Number of Rs', 0, 10, 2, {"0", "1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
 		submenu.checkbox('ignite', 'Summoner Ignite', true)
+		menu.checkbutton('useItems', 'Use Active Items', true)
 --		local submenu = menu.submenu('Enemies')
 --		for i, Enemy in pairs(Enemies) do
 --			if Enemy ~= nil then
@@ -155,8 +161,6 @@ YayoBuddy.Unsupported = { --add botrk
 		menu.label('lblspace1', ' ')
 		menu.label('lbl2', 'You still have access to Yayo \n and all utility features.')
 		menu.label('lblspace2', ' ')
-		local submenu = menu.submenu('AutoPotions')
-		menu.checkbutton('useItems', 'Use Active Items', true)
 	end
 }
 
@@ -369,12 +373,340 @@ YayoBuddy.Ahri = {
 	end
 }
 
+YayoBuddy.Annie = {
+	OnTick = function(target)
+		YayoBuddy.Annie.Intro()
+		YayoBuddy.Annie.StunCheck()
+		YayoBuddy.Annie.shieldCharge()
+		YayoBuddy.Annie.aaDisable()
+		if yayo.Config.AutoCarry then YayoBuddy.Annie.mecR(GetWeakEnemy('MAGIC', 600)) end
+		--if CfgYayoBuddy_Annie._AutoCarry.useDFG and checkDFG() then YayoBuddy.Annie.rotationDFG() end --disabled, prefer how it plays linked to MEC R and R
+		--YayoBuddy.Annie.wCharge() Removed until it's more refined. Wastes too much mana currently
+		if CfgYayoBuddy_Annie.teamFightMode and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 and myHero.SpellNameR ~= "infernalguardianguide" then
+			comboYayoBuddy(M, 625, 4, YayoBuddy.Annie.R, 2, YayoBuddy.Annie.W2, 1, YayoBuddy.Annie.Q2, x, x)
+		else
+			comboYayoBuddy(M, 625, 4, YayoBuddy.Annie.R, 2, YayoBuddy.Annie.W, 1, YayoBuddy.Annie.Q, x, x)
+		end
+		if CfgYayoBuddy_Annie.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Annie.Q, 625, YayoBuddy.Annie.W, 625, x, 0, YayoBuddy.Annie.R, 600, x) end
+		spellFarm(625, YayoBuddy.Annie.Q2, YayoBuddy.Annie.W, x, x)
+		if CfgYayoBuddy_Annie.AutoPotions.AutoPotions_ONOFF then autoPotions(CfgYayoBuddy_Annie.AutoPotions.Health_Potion_Value, CfgYayoBuddy_Annie.AutoPotions.Chrystalline_Flask_Value, CfgYayoBuddy_Annie.AutoPotions.Elixir_of_Fortitude_Value, CfgYayoBuddy_Annie.AutoPotions.Mana_Potion_Value) end
+	end,
+	Q = function(target)
+		local spellData = { range = CfgYayoBuddy_Annie.SpellOptions.qRNG, mana = (55+(5*myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_Annie.ManaManager.manaQ }
+		if target ~= nil then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+				CastSpellTarget('Q', target)
+			end
+		end
+	end,
+	Q2 = function(target)
+		local spellData = { range = CfgYayoBuddy_Annie.SpellOptions.qRNG, mana = (55+(5*myHero.SpellLevelQ)), manaThreshold = CfgYayoBuddy_Annie.ManaManager.manaQ }
+		if pyromaniaActive == false then
+			if target ~= nil then
+				if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+					CastSpellTarget('Q', target)
+				end
+			end
+		end
+	end,
+	W = function(target)
+		local spellData = { range = CfgYayoBuddy_Annie.SpellOptions.wRNG, mana = (60+(10*myHero.SpellLevelW)), manaThreshold = CfgYayoBuddy_Annie.ManaManager.manaW }
+		if target ~= nil then
+			if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+				CastSpellTarget('W', target)
+			end
+		end
+	end,
+	W2 = function(target)
+		local spellData = { range = CfgYayoBuddy_Annie.SpellOptions.wRNG, mana = (60+(10*myHero.SpellLevelW)), manaThreshold = CfgYayoBuddy_Annie.ManaManager.manaW }
+		if pyromaniaActive == false then
+			if target ~= nil then
+				if ValidTarget(target) and GetDistance(target) < spellData.range and myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+					CastSpellTarget('W', target)
+				end
+			end
+		end
+	end,
+	E = function()
+		local spellData = { mana = 75, manaThreshold = CfgYayoBuddy_Annie.ManaManager.manaE }
+		if YayoBuddy_Annie.SpellOptions.eCharge and not YayoBuddy.Annie.StunCheck() then
+			if myHero.mana >= spellData.mana and myHero.mana >= myHero.maxMana * (spellData.manaThreshold / 100) then
+				CastSpellTarget('E', myHero)
+			end
+		end
+	end,
+	R = function(target) --add champion count slider
+		local spellData = { range = 600, mana = 100, manaThreshold = CfgYayoBuddy_Annie.ManaManager.manaR }
+		if target ~= nil then
+			if pyromaniaActive == true and CfgYayoBuddy_Annie.teamFightMode ~= true then
+				if ValidTarget(target) and GetDistance(target) <= spellData.range then
+					ultPos = GetMEC(290, 600, target)
+					if ultPos then
+						if CfgYayoBuddy_Annie._AutoCarry.useDFG and checkDFG() and canCastDFG() then useDeathfireGrasp(target) end
+						CastSpellXYZ('R', ultPos.x, 0, ultPos.z)
+					else
+						CastSpellTarget('R', target)
+					end
+				end
+			end
+		end
+	end,
+	mecR = function(target)
+		local spellData = { range = 600, mana = 100, manaThreshold = CfgYayoBuddy_Annie.ManaManager.manaR }
+		if target ~= nil then
+			if pyromaniaActive == true then
+				if ValidTarget(target) and GetDistance(target) <= spellData.range then
+					ultPos = GetMEC(290, 600, target)
+					if ultPos and CountUnit(ultPos,230) >= CfgYayoBuddy_Annie.SpellOptions.mecVal then
+						if CfgYayoBuddy_Annie._AutoCarry.useDFG and checkDFG() and canCastDFG() then useDeathfireGrasp(target) end
+						CastSpellXYZ('R', ultPos.x, 0, ultPos.z)
+					end
+				end
+			end
+		end
+	end,
+	--[[ Removed - prefer the way it plays linked to R in teamfight mode.
+	rotationDFG = function()
+		for i = 1, objManager:GetMaxHeroes() do
+		local enemy = objManager:GetHero(i)
+			if enemy ~= nil then
+				if ValidTarget(enemy) and GetDistance(enemy) <= 600 then
+					local dfgDamage = {
+					DFG = getDmg('DFG', enemy, myHero),
+					Q = (getDmg('Q', enemy, myHero)+(getDmg('Q', enemy, myHero)*.20)),
+					W = (getDmg('W', enemy, myHero)+(getDmg('W', enemy, myHero)*.20)),
+					R = (getDmg('R', enemy, myHero)+(getDmg('R', enemy, myHero)*.20)),
+					I = nil,
+					Timer = 0
+					}
+					if dfgDamage.DFG > enemy.health then
+						if canCastDFG() then useDeathfireGrasp(enemy) end
+				--	elseif dfgDamage.DFG + dfgDamage.Q > enemy.health and myHero.SpellTimeQ > 1.0 then
+				--		if canCastDFG() then useDeathfireGrasp(enemy) end
+				--		if GetClock() < dfgTimer + 4000 then YayoBuddy.Annie.Q(enemy) end
+				--	elseif dfgDamage.DFG + dfgDamage.W > enemy.health and myHero.SpellTimeW > 1.0 then
+				--		if canCastDFG() then useDeathfireGrasp(enemy) end
+				--		YayoBuddy.Annie.W(enemy)
+					elseif dfgDamage.DFG + dfgDamage.W + dfgDamage.Q + dfgDamage.R > enemy.health then
+						if canCastDFG() and pyromaniaActive == true and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 then 
+							useDeathfireGrasp(enemy) 
+						end
+					if not canCastDFG() and GetClock() < dfgTimer + 4000 then
+						YayoBuddy.Annie.R(enemy)
+						YayoBuddy.Annie.W2(enemy)
+						YayoBuddy.Annie.Q2(enemy)
+						end
+					end
+				end
+			end
+		end
+	end,
+	]]
+	StunCheck = function()
+    	for i = 1, objManager:GetMaxNewObjects(), 1 do
+        	obj = objManager:GetNewObject(i)
+        	if obj~=nil then
+				if (obj.charName:find("StunReady")) and GetDistance(obj, myHero) < 100 then
+                	pyromaniaActive = true
+            	end
+        	end
+    	end
+	end,
+	OnProcessSpell = function(unit, spell)
+		if unit ~= nil and spell ~= nil and IsHero(unit) then
+			if unit.charName == myHero.charName then
+				if spell.name == "Disintegrate" or spell.name == "Incinerate" or spell.name == "InfernalGuardian" then
+					if pyromaniaActive == true then pyromaniaActive = false end
+				end
+				if spell.name == "DeathfireGrasp" then
+					dfgTimer = GetClock()
+				end
+			end
+		end
+	end,
+	shieldCharge = function()
+		if yayo.Config.AutoCarry or yayo.Config.LastHit or yayo.Config.Mixed or yayo.Config.LaneClear then
+			if pyromaniaActive == false then
+				CastSpellTarget('E', myHero)
+			end
+		end
+	end,
+	wCharge = function()
+		if pyromaniaActive == false then
+			CastSpellXYZ('W', myHero.x, myHero.y, myHero.z)
+		end
+	end,
+	aaDisable = function()
+		if yayo.Config.AutoCarry and CfgYayoBuddy_Annie.teamFightMode and myHero.SpellLevelR >= 1 and myHero.SpellTimeR > 1.0 and myHero.SpellNameR ~= "infernalguardianguide" then
+			yayo.DisableAttacks()
+		else
+			yayo.EnableAttacks()
+		end
+	end,
+	OnDraw = function(target)
+		if CfgYayoBuddy_Annie.Draw.drawQ and CfgYayoBuddy_Annie.Draw.qType == 1 then
+			if myHero.SpellLevelQ >= 1 and myHero.SpellTimeQ < -1 then
+				DrawCircleObject(myHero, (CfgYayoBuddy_Annie.SpellOptions.qRNG/(-myHero.SpellTimeQ*-myHero.SpellTimeQ)), CfgYayoBuddy_Annie.Draw.colorQ)
+			elseif myHero.SpellLevelQ >= 1 and myHero.SpellTimeQ > -1 then
+				DrawCircleObject(myHero, CfgYayoBuddy_Annie.SpellOptions.qRNG, CfgYayoBuddy_Annie.Draw.colorQ)
+			end
+		elseif CfgYayoBuddy_Annie.Draw.drawQ and CfgYayoBuddy_Annie.Draw.qType == 2 then
+			if myHero.SpellTimeQ > 1.0 and myHero.SpellLevelQ >= 1 and CfgYayoBuddy_Annie.Draw.drawQ then
+				DrawCircleObject(myHero, CfgYayoBuddy_Annie.SpellOptions.qRNG, CfgYayoBuddy_Annie.Draw.colorQ)
+			end
+		end
+		if CfgYayoBuddy_Annie.Draw.drawW and CfgYayoBuddy_Annie.Draw.wType == 1 then
+			if myHero.SpellLevelW >= 1 and myHero.SpellTimeW < -1 then
+				DrawCircleObject(myHero, (CfgYayoBuddy_Annie.SpellOptions.wRNG/(-myHero.SpellTimeW*-myHero.SpellTimeW)), CfgYayoBuddy_Annie.Draw.colorW)
+			elseif myHero.SpellLevelW >= 1 and myHero.SpellTimeW > -1 then
+				DrawCircleObject(myHero, CfgYayoBuddy_Annie.SpellOptions.wRNG, CfgYayoBuddy_Annie.Draw.colorW)
+			end
+		elseif CfgYayoBuddy_Annie.Draw.drawW and CfgYayoBuddy_Annie.Draw.wType == 2 then
+			if myHero.SpellTimeW > 1.0 and myHero.SpellLevelW >= 1 and CfgYayoBuddy_Annie.Draw.drawW then
+				DrawCircleObject(myHero, CfgYayoBuddy_Annie.SpellOptions.wRNG, CfgYayoBuddy_Annie.Draw.colorW)
+			end
+		end
+		if CfgYayoBuddy_Annie.Draw.drawR and CfgYayoBuddy_Annie.Draw.rType == 1 then
+			if myHero.SpellLevelR >= 1 and myHero.SpellTimeR < -1 then
+				DrawCircleObject(myHero, (600/(-myHero.SpellTimeR*-myHero.SpellTimeR)), CfgYayoBuddy_Annie.Draw.colorR)
+			elseif myHero.SpellLevelR >= 1 and myHero.SpellTimeR > -1 then
+				DrawCircleObject(myHero, 600, CfgYayoBuddy_Annie.Draw.colorR)
+			end
+		elseif CfgYayoBuddy_Annie.Draw.drawR and CfgYayoBuddy_Annie.Draw.rType == 2 then
+			if myHero.SpellTimeR > 1.0 and myHero.SpellLevelR >= 1 and CfgYayoBuddy_Annie.Draw.drawR then
+				DrawCircleObject(myHero, 600, CfgYayoBuddy_Annie.Draw.colorR)
+			end
+		end
+		if CfgYayoBuddy_Annie.RoamHelper.Enable then roamHelper(CfgYayoBuddy_Annie.RoamHelper.AAnumb, CfgYayoBuddy_Annie.RoamHelper.Qnumb, CfgYayoBuddy_Annie.RoamHelper.Wnumb, CfgYayoBuddy_Annie.RoamHelper.Enumb, CfgYayoBuddy_Annie.RoamHelper.Rnumb, CfgYayoBuddy_Annie.RoamHelper.ignite) end
+	end,
+	Intro = function()
+		if GetClock() > introTimer + 15000 then
+			return false
+		end
+			DrawText("CCONN's Yayo Buddy: ", 100, 80, Color.White)
+			DrawText("Annie ", 225, 80, Color.White)
+			DrawText("Version "..version, 271, 80, Color.Purple)
+			DrawText("Loaded!", 351, 80, Color.Green)
+			DrawText("Don't forget to donate and +Rep!", 100, 100, Color.Gray)
+			DrawText("www.Facebook.com/CCONN81", 100, 115, Color.Gray)
+	end,
+	Menu = function()
+		CfgYayoBuddy_Annie, menu = uiconfig.add_menu("YayoBuddy: Annie", 200)
+		local submenu = menu.submenu('_AutoCarry')
+		submenu.label('lbl', '--------------------')
+		submenu.label('lbl', 'USE VS CHAMPIONS:')
+		submenu.checkbox('useQ', 'Q: Disintegrate', true)
+		submenu.checkbox('useW', 'W: Incinerate', true)
+		submenu.label('useE', 'E: N/A', false)
+		submenu.checkbox('useR', 'R: Summon Tibbers', false)
+		submenu.checkbox('useDFG', 'DFG Rotation', true)
+		local submenu = menu.submenu('_LaneClear')
+		submenu.label('lbl', '--------------------')
+		submenu.label('lbl', 'USE VS CHAMPIONS:')
+		submenu.checkbox('useQ', 'Q: Disintegrate', true)
+		submenu.checkbox('useW', 'W: Incinerate', true)
+		submenu.label('useE', 'E: N/A', false)
+		submenu.checkbox('useR', 'R: Summon Tibbers', false)
+		submenu.label('lbl', '--------------------')
+		submenu.label('lbl', 'USE VS MINIONS:')
+		submenu.checkbox('farmQ', 'Q: Disintegrate', true)
+		submenu.checkbox('farmW', 'W: Incinerate', true)
+		local submenu = menu.submenu('_LastHit')
+		submenu.label('lbl', '--------------------')
+		submenu.label('lbl', 'USE VS CHAMPIONS:')
+		submenu.checkbox('useQ', 'Q: Disintegrate', false)
+		submenu.checkbox('useW', 'W: Incinerate', false)
+		submenu.label('useE', 'E: N/A', false)
+		submenu.checkbox('useR', 'R: Summon Tibbers', false)
+		submenu.label('lbl', '--------------------')
+		submenu.label('lbl', 'USE VS MINIONS:')
+		submenu.checkbox('farmQ', 'Q: Disintegrate', false)
+		submenu.checkbox('farmW', 'W: Incinerate', false)
+		local submenu = menu.submenu('_MixedMode')
+		submenu.label('lbl', '--------------------')
+		submenu.label('lbl', 'USE VS CHAMPIONS:')
+		submenu.checkbox('useQ', 'Q: Disintegrate', true)
+		submenu.checkbox('useW', 'W: Incinerate', true)
+		submenu.checkbox('useE', 'E: N/A', false)
+		submenu.checkbox('useR', 'R: Summon Tibbers', false)
+		submenu.label('lbl', '--------------------')
+		submenu.label('lbl', 'USE VS MINIONS:')
+		submenu.checkbox('farmQ', 'Q: Disintegrate', false)
+		submenu.checkbox('farmW', 'W: Incinerate', false)
+		local submenu = menu.submenu('ManaManager')
+		submenu.label('lbl', '--------------------')
+		submenu.label('lbl', 'MANA MANAGER: VS CHAMPIONS:')
+		submenu.slider('manaQ','Q Mana Threshold', 0, 100, 0, nil, true)
+		submenu.slider('manaW','W Mana Threshold', 0, 100, 0, nil, true)
+		submenu.slider('manaE','E Mana Threshold', 0, 100, 0, nil, true)
+		submenu.slider('manaR','R Mana Threshold', 0, 100, 0, nil, true)
+		submenu.label('lbl', '--------------------')
+		submenu.label('lbl', 'MANA MANAGER: VS MINIONS:')
+		submenu.slider('manaSpellFarm','Spell Farm Mana Threshold', 0, 100, 75, nil, true)
+		local submenu = menu.submenu('SpellOptions')
+		submenu.label('lbl', '--------------------')
+		submenu.label('lbl', 'SPELL RANGES:')
+		submenu.slider('qRNG', 'Q: Disintegrate', 0, 625, 600, nil, true)
+		submenu.slider('wRNG', 'W: Incinerate', 0, 625, 600, nil, true)
+		submenu.label('lbl', '--------------------')
+		submenu.label('lbl', 'MEC Ultimate Options:')
+		submenu.slider('mecVal', 'Min # of Enemies', 0, 5, 3, {1,2,3,4,5})
+		submenu.permashow('mecVal')
+		local submenu = menu.submenu('KillSteals')
+		submenu.checkbutton('ks_ONOFF', 'Enable Kill Steals', true)
+		submenu.checkbox('ksQ', 'Kill Steal with Q', true)
+		submenu.checkbox('ksW', 'Kill Steal with W', true)
+		submenu.label('ksE', 'E: N/A', false)
+		submenu.checkbox('ksR', 'Kill Steal with R', true)
+		submenu.checkbox('ksI', 'Kill Steal with Ignite', true)
+		submenu.label('lbl', ' ')
+		submenu.label('lbl', '31 possible kill steal combinations. \n Unchecking a spell will disable all \n possible combinations for that spell.')
+		submenu.label('lbl', ' ')
+		submenu.label('lbl', ' ')
+		local submenu = menu.submenu('AutoPotions')
+		submenu.checkbutton('AutoPotions_ONOFF', 'Enable Auto Potions', true)
+		submenu.checkbox('Health_Potion_ONOFF', 'Health Potions', true)
+		submenu.checkbox('Mana_Potion_ONOFF', 'Mana Potions', true)
+		submenu.checkbox('Chrystalline_Flask_ONOFF', 'Chrystalline Flask', true)
+		submenu.checkbox('Elixir_of_Fortitude_ONOFF', 'Elixir of Fortitude', true)
+		submenu.slider('Health_Potion_Value', 'Health Potion Value', 0, 100, 75, nil, true)
+		submenu.slider('Mana_Potion_Value', 'Mana Potion Value', 0, 100, 75, nil, true)
+		submenu.slider('Chrystalline_Flask_Value', 'Chrystalline Flask Value', 0, 100, 75, nil, true)
+		submenu.slider('Elixir_of_Fortitude_Value', 'Elixir of Fortitude Value', 0, 100, 30, nil, true)
+		local submenu = menu.submenu('Draw')
+		submenu.checkbox('drawQ', 'Q Range', true)
+		submenu.slider('qType', 'Q Circle Type:', 1, 2, 1, {"Cool Down Circles","Standard Circles"})
+		submenu.slider('colorQ', 'Q Range Color:', 1, 6, 4, {"Green","Red", "Aqua", "Light Purple", "Blue", "Dark Purple"})
+		submenu.checkbox('drawW', 'W Range', true)
+		submenu.slider('wType', 'W Circle Type:', 1, 2, 2, {"Cool Down Circles","Standard Circles"})
+		submenu.slider('colorW', 'W Range Color:', 1, 6, 5, {"Green","Red", "Aqua", "Light Purple", "Blue", "Dark Purple"})
+		submenu.label('drawE', 'E: N/A', false)
+		submenu.checkbox('drawR', 'R Range', true)
+		submenu.slider('rType', 'R Circle Type:', 1, 2, 2, {"Cool Down Circles","Standard Circles"})
+		submenu.slider('colorR', 'R Range Color:', 1, 6, 2, {"Green","Red", "Aqua", "Light Purple", "Blue", "Dark Purple"})
+		local submenu = menu.submenu('RoamHelper')
+		submenu.checkbutton('Enable', 'Enable Roam Helper', true)
+		submenu.slider('AAnumb', 'Number of AAs', 0, 10, 3, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
+		submenu.slider('Qnumb', 'Number of Qs', 0, 10, 1, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
+		submenu.slider('Wnumb', 'Number of Ws', 0, 10, 1, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
+		submenu.label('Enumb', 'E: N/A', 0)
+		submenu.slider('Rnumb', 'Number of Rs', 0, 10, 1, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
+		submenu.checkbox('ignite', 'Summoner Ignite', true)
+		menu.checkbutton('useItems', 'Use Active Items', true)
+		menu.keytoggle('teamFightMode', 'Team Fight Mode', Keys.Z)
+		menu.label('lbl1', ' ')
+		menu.label('lbl2', 'CCONNs Yayo Buddy Version '..version)
+		menu.label('lbl3', 'www.facebook.com/CCONN81')
+		menu.permashow('teamFightMode')
+	end
+}
+
 YayoBuddy.Caitlyn = {
 	OnTick = function(target)
 		YayoBuddy.Caitlyn.Intro()
 		local targetEQ = GetWeakEnemy('PHYS', 1300)
-		if CfgYayoBuddy_Caitlyn.ActiveItems.smartBWC then smartBWC(target) end
-		if CfgYayoBuddy_Caitlyn.ActiveItems.smartBOTRK then smartBOTRK(target) end
+		if CfgYayoBuddy_Caitlyn.ActiveItems.smartBWC and yayo.Config.AutoCarry then smartBWC(target) end
+		if CfgYayoBuddy_Caitlyn.ActiveItems.smartBOTRK and yayo.Config.AutoCarry then smartBOTRK(target) end
 		comboYayoBuddy(P, 3000, 1, YayoBuddy.Caitlyn.Q, 2, YayoBuddy.Caitlyn.W, 3, YayoBuddy.Caitlyn.E, 4, YayoBuddy.Caitlyn.R)
 		if CfgYayoBuddy_Caitlyn.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Caitlyn.Q, 1300, YayoBuddy.Caitlyn.W, 800, YayoBuddy.Caitlyn.E, 950, YayoBuddy.Caitlyn.R, 3000, x) end
 		if CfgYayoBuddy_Caitlyn.useEQ then YayoBuddy.Caitlyn.EQ(targetEQ) end
@@ -783,8 +1115,8 @@ YayoBuddy.Cassiopeia = {
 YayoBuddy.Corki = {
 	OnTick = function(target)
 		YayoBuddy.Corki.Intro()
-		if CfgYayoBuddy_Corki.ActiveItems.smartBWC then smartBWC(target) end
-		if CfgYayoBuddy_Corki.ActiveItems.smartBOTRK then smartBOTRK(target) end
+		if CfgYayoBuddy_Corki.ActiveItems.smartBWC and yayo.Config.AutoCarry then smartBWC(target) end
+		if CfgYayoBuddy_Corki.ActiveItems.smartBOTRK and yayo.Config.AutoCarry then smartBOTRK(target) end
 		comboYayoBuddy(P, 1225, 1, YayoBuddy.Corki.Q, 3, YayoBuddy.Corki.E, 4, YayoBuddy.Corki.R, x, x)
 		if CfgYayoBuddy_Corki.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Corki.Q, 825, x, x, YayoBuddy.Corki.E, 600, YayoBuddy.Corki.R, 1225, x) end
 		spellFarm(1225, YayoBuddy.Corki.Q, x, x, YayoBuddy.Corki.R)
@@ -965,8 +1297,8 @@ YayoBuddy.Corki = {
 YayoBuddy.Ezreal = { --muramana
 	OnTick = function(target)
 		YayoBuddy.Ezreal.Intro()
-		if CfgYayoBuddy_Ezreal.ActiveItems.smartBWC then smartBWC(target) end
-		if CfgYayoBuddy_Ezreal.ActiveItems.smartBOTRK then smartBOTRK(target) end
+		if CfgYayoBuddy_Ezreal.ActiveItems.smartBWC and yayo.Config.AutoCarry then smartBWC(target) end
+		if CfgYayoBuddy_Ezreal.ActiveItems.smartBOTRK and yayo.Config.AutoCarry then smartBOTRK(target) end
 		comboYayoBuddy(P, 3000, 1, YayoBuddy.Ezreal.Q, 3, YayoBuddy.Ezreal.E, 4, YayoBuddy.Ezreal.R, x, x)
 		if CfgYayoBuddy_Ezreal.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Ezreal.Q, 1150, YayoBuddy.Ezreal.W, 1000, x, 0, YayoBuddy.Ezreal.R, 3000, x) end
 		spellFarm(1150, YayoBuddy.Ezreal.Q, x, x, x)
@@ -1147,8 +1479,8 @@ YayoBuddy.Ezreal = { --muramana
 YayoBuddy.Graves = {
 	OnTick = function(target)
 		YayoBuddy.Graves.Intro()
-		if CfgYayoBuddy_Graves.ActiveItems.smartBWC then smartBWC(target) end
-		if CfgYayoBuddy_Graves.ActiveItems.smartBOTRK then smartBOTRK(target) end
+		if CfgYayoBuddy_Graves.ActiveItems.smartBWC and yayo.Config.AutoCarry then smartBWC(target) end
+		if CfgYayoBuddy_Graves.ActiveItems.smartBOTRK and yayo.Config.AutoCarry then smartBOTRK(target) end
 		comboYayoBuddy(P, 1000, 2, YayoBuddy.Graves.W, 3, YayoBuddy.Graves.E, 1, YayoBuddy.Graves.Q, 4, YayoBuddy.Graves.R)
 		if CfgYayoBuddy_Graves.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Graves.Q, 950, x, x, x, x, YayoBuddy.Graves.R, 1000, x) end
 		spellFarm(950, YayoBuddy.Graves.Q, x, x, x)
@@ -1337,8 +1669,8 @@ YayoBuddy.KogMaw = {
 	OnTick = function(target)
 		YayoBuddy.KogMaw.Intro()
 		StackReset()
-		if CfgYayoBuddy_KogMaw.ActiveItems.smartBWC then smartBWC(target) end
-		if CfgYayoBuddy_KogMaw.ActiveItems.smartBOTRK then smartBOTRK(target) end
+		if CfgYayoBuddy_KogMaw.ActiveItems.smartBWC and yayo.Config.AutoCarry then smartBWC(target) end
+		if CfgYayoBuddy_KogMaw.ActiveItems.smartBOTRK and yayo.Config.AutoCarry then smartBOTRK(target) end
 		comboYayoBuddy(P, 1800, 2, YayoBuddy.KogMaw.W, 3, YayoBuddy.KogMaw.E, 4, YayoBuddy.KogMaw.R, 1, YayoBuddy.KogMaw.Q)
 		if CfgYayoBuddy_KogMaw.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.KogMaw.Q, 1000, x, x, YayoBuddy.KogMaw.E, 1280, YayoBuddy.KogMaw.R, GetRRange(), x) end
 		if CfgYayoBuddy_KogMaw.AutoPotions.AutoPotions_ONOFF then autoPotions(CfgYayoBuddy_KogMaw.AutoPotions.Health_Potion_Value, CfgYayoBuddy_KogMaw.AutoPotions.Chrystalline_Flask_Value, CfgYayoBuddy_KogMaw.AutoPotions.Elixir_of_Fortitude_Value, CfgYayoBuddy_KogMaw.AutoPotions.Mana_Potion_Value) end
@@ -1518,8 +1850,8 @@ YayoBuddy.KogMaw = {
 YayoBuddy.MasterYi = {
 	OnTick = function(target)
 		YayoBuddy.MasterYi.Intro()
-		if CfgYayoBuddy_MasterYi.ActiveItems.smartBWC then smartBWC(target) end
-		if CfgYayoBuddy_MasterYi.ActiveItems.smartBOTRK then smartBOTRK(target) end
+		if CfgYayoBuddy_MasterYi.ActiveItems.smartBWC and yayo.Config.AutoCarry then smartBWC(target) end
+		if CfgYayoBuddy_MasterYi.ActiveItems.smartBOTRK and yayo.Config.AutoCarry then smartBOTRK(target) end
 		comboYayoBuddy(P, 600, 1, YayoBuddy.MasterYi.Q, 4, YayoBuddy.MasterYi.R, 3, YayoBuddy.MasterYi.E, x, x)
 		if CfgYayoBuddy_MasterYi.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.MasterYi.Q, 600, x, 0, x, 0, x, 0, x) end
 		spellFarm(600, YayoBuddy.MasterYi.Q, x, x, x)
@@ -1942,8 +2274,8 @@ YayoBuddy.MissFortune = {
 	OnTick = function(target)
 		YayoBuddy.MissFortune.Intro()
 		bulletTimeReset()
-		if CfgYayoBuddy_MissFortune.ActiveItems.smartBWC then smartBWC(target) end
-		if CfgYayoBuddy_MissFortune.ActiveItems.smartBOTRK then smartBOTRK(target) end
+		if CfgYayoBuddy_MissFortune.ActiveItems.smartBWC and yayo.Config.AutoCarry then smartBWC(target) end
+		if CfgYayoBuddy_MissFortune.ActiveItems.smartBOTRK and yayo.Config.AutoCarry then smartBOTRK(target) end
 		comboYayoBuddy(P, 1400, 2, YayoBuddy.MissFortune.W, 1, YayoBuddy.MissFortune.Q, 3, YayoBuddy.MissFortune.E, 4, YayoBuddy.MissFortune.R)
 		if CfgYayoBuddy_MissFortune.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.MissFortune.Q, 650, x, x, YayoBuddy.MissFortune.E, 800, YayoBuddy.MissFortune.R, 1400, x) end
 		spellFarm(650, YayoBuddy.MissFortune.Q, x, x, x)
@@ -2341,8 +2673,8 @@ YayoBuddy.Ryze = {
 YayoBuddy.Teemo = {
 	OnTick = function(target)
 		YayoBuddy.Teemo.Intro()
-		if CfgYayoBuddy_Teemo.ActiveItems.smartBWC then smartBWC(target) end
-		if CfgYayoBuddy_Teemo.ActiveItems.smartBOTRK then smartBOTRK(target) end
+		if CfgYayoBuddy_Teemo.ActiveItems.smartBWC and yayo.Config.AutoCarry then smartBWC(target) end
+		if CfgYayoBuddy_Teemo.ActiveItems.smartBOTRK and yayo.Config.AutoCarry then smartBOTRK(target) end
 		if CfgYayoBuddy_Teemo._AutoCarry.useDFG then YayoBuddy.Teemo.rotationDFG(target) end
 		comboYayoBuddy(M, 580, 1, YayoBuddy.Teemo.Q, 2, YayoBuddy.Teemo.W, x, x, 4, YayoBuddy.Teemo.R)
 		if CfgYayoBuddy_Teemo.KillSteals.ks_ONOFF then killStealTest(YayoBuddy.Teemo.Q, 580, x, 0, x, 0, YayoBuddy.Teemo.R, 230, x) end
@@ -2542,15 +2874,15 @@ YayoBuddy.Teemo = {
 YayoBuddy.Tristana = { -- add r interrupt and anti gap closer
 	OnTick = function(target)
 		YayoBuddy.Tristana.Intro()
-		if CfgYayoBuddy_Tristana.ActiveItems.smartBWC then smartBWC(target) end
-		if CfgYayoBuddy_Tristana.ActiveItems.smartBOTRK then smartBOTRK(target) end
+		if CfgYayoBuddy_Tristana.ActiveItems.smartBWC and yayo.Config.AutoCarry then smartBWC(target) end
+		if CfgYayoBuddy_Tristana.ActiveItems.smartBOTRK and yayo.Config.AutoCarry then smartBOTRK(target) end
 		if CfgYayoBuddy_Tristana.TristMode == 1 then
 			comboYayoBuddy(P, 900, 1, YayoBuddy.Tristana.Q, 2, YayoBuddy.Tristana.W, 3, YayoBuddy.Tristana.E, 4, YayoBuddy.Tristana.R)
 		elseif CfgYayoBuddy_Tristana.TristMode == 2 then
 			comboYayoBuddy(M, 900, 2, YayoBuddy.Tristana.W, 3, YayoBuddy.Tristana.E, 4, YayoBuddy.Tristana.R, 1, YayoBuddy.Tristana.Q)
 		end
 		if CfgYayoBuddy_Tristana.KillSteals.ks_ONOFF then killStealTest(x, x, YayoBuddy.Tristana.W, 900, YayoBuddy.Tristana.E, myHero.range, YayoBuddy.Tristana.R, myHero.range, x) end --add ignite
-		spellFarm(myHero.range, x, YayoBuddy.Tristana.W, YayoBuddy.Tristana.E, x)
+		spellFarm(myHero.range, YayoBuddy.Tristana.Q, YayoBuddy.Tristana.W, YayoBuddy.Tristana.E, x)
 		if CfgYayoBuddy_Tristana.AutoPotions.AutoPotions_ONOFF then autoPotions(CfgYayoBuddy_Tristana.AutoPotions.Health_Potion_Value, CfgYayoBuddy_Tristana.AutoPotions.Chrystalline_Flask_Value, CfgYayoBuddy_Tristana.AutoPotions.Elixir_of_Fortitude_Value, CfgYayoBuddy_Tristana.AutoPotions.Mana_Potion_Value) end
 	end,
 	AfterAttack = function(target)
@@ -2648,15 +2980,15 @@ YayoBuddy.Tristana = { -- add r interrupt and anti gap closer
 		local submenu = menu.submenu('_LaneClear')
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS CHAMPIONS:')
-		submenu.checkbox('useQ', 'Q: Rapid Fire', true)
+		submenu.checkbox('useQ', 'Q: Rapid Fire', false)
 		submenu.checkbox('useW', 'W: Rocket Jump', false)
 		submenu.checkbox('useE', 'E: Explosive Shot', true)
 		submenu.checkbox('useR', 'R: Buster Shot', false)
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS MINIONS:')
-		submenu.checkbox('farmQ', 'Q: Rapid Fire', false)
+		submenu.checkbox('farmQ', 'Q: Rapid Fire', true)
 		submenu.checkbox('farmW', 'W: Rocket Jump', false)
-		submenu.checkbox('farmE', 'E: Explosive Shot', true)
+		submenu.checkbox('farmE', 'E: Explosive Shot', false)
 		local submenu = menu.submenu('_LastHit')
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS CHAMPIONS:')
@@ -2666,21 +2998,21 @@ YayoBuddy.Tristana = { -- add r interrupt and anti gap closer
 		submenu.checkbox('useR', 'R: Buster Shot', false)
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS MINIONS:')
-		submenu.checkbox('farmQ', 'Q: Rapid Fire', false)
+		submenu.label('farmQ', 'Q: Not Available', false)
 		submenu.checkbox('farmW', 'W: Rocket Jump', false)
 		submenu.checkbox('farmE', 'E: Explosive Shot', true)
 		local submenu = menu.submenu('_MixedMode')
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS CHAMPIONS:')
-		submenu.checkbox('useQ', 'Q: Rapid Fire', true)
+		submenu.checkbox('useQ', 'Q: Rapid Fire', false)
 		submenu.checkbox('useW', 'W: Rocket Jump', false)
 		submenu.checkbox('useE', 'E: Explosive Shot', true)
 		submenu.checkbox('useR', 'R: Buster Shot', false)
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'USE VS MINIONS:')
-		submenu.checkbox('farmQ', 'Q: Rapid Fire', false)
+		submenu.label('farmQ', 'Q: Not Available', false)
 		submenu.checkbox('farmW', 'W: Rocket Jump', false)
-		submenu.checkbox('farmE', 'E: Explosive Shot', true)
+		submenu.checkbox('farmE', 'E: Explosive Shot', false)
 		local submenu = menu.submenu('ManaManager')
 		submenu.label('lbl', '--------------------')
 		submenu.label('lbl', 'MANA MANAGER: VS CHAMPIONS:')
@@ -2701,7 +3033,7 @@ YayoBuddy.Tristana = { -- add r interrupt and anti gap closer
 		submenu.slider('SafeW_Value', 'Safe Zone Range', 0, 2000, 700, nil, true)
 		local submenu = menu.submenu('KillSteals')
 		submenu.checkbutton('ks_ONOFF', 'Enable Kill Steals', true)
-		submenu.checkbox('ksQ', 'Kill Steal with Q', true)
+		submenu.label('ksQ', 'Q: Not Available', false)
 		submenu.checkbox('ksW', 'Kill Steal with W', true)
 		submenu.checkbox('ksE', 'Kill Steal with E', true)
 		submenu.checkbox('ksR', 'Kill Steal with R', true)
@@ -2735,7 +3067,7 @@ YayoBuddy.Tristana = { -- add r interrupt and anti gap closer
 		local submenu = menu.submenu('RoamHelper')
 		submenu.checkbutton('Enable', 'Enable Roam Helper', true)
 		submenu.slider('AAnumb', 'Number of AAs', 0, 10, 4, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
-		submenu.slider('Qnumb', 'Number of Qs', 0, 10, 0, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
+		submenu.label('Qnumb', 'Q: Not Available', 0)
 		submenu.slider('Wnumb', 'Number of Ws', 0, 10, 1, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
 		submenu.slider('Enumb', 'Number of Es', 0, 10, 1, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
 		submenu.slider('Rnumb', 'Number of Rs', 0, 10, 1, {"1","2", "3", "4", "5", "6", "7", "8", "9", "10"})
@@ -2751,8 +3083,8 @@ YayoBuddy.Tristana = { -- add r interrupt and anti gap closer
 YayoBuddy.Vayne = {
 	OnTick = function(target)
 		YayoBuddy.Vayne.Intro()
-		if CfgYayoBuddy_Vayne.ActiveItems.smartBWC then smartBWC(target) end
-		if CfgYayoBuddy_Vayne.ActiveItems.smartBOTRK then smartBOTRK(target) end
+		if CfgYayoBuddy_Vayne.ActiveItems.smartBWC and yayo.Config.AutoCarry then smartBWC(target) end
+		if CfgYayoBuddy_Vayne.ActiveItems.smartBOTRK and yayo.Config.AutoCarry then smartBOTRK(target) end
 		spellFarm(myHero.range, YayoBuddy.Vayne.Q, x, x, x)
 		if CfgYayoBuddy_Vayne.AutoPotions.AutoPotions_ONOFF then autoPotions(CfgYayoBuddy_Vayne.AutoPotions.Health_Potion_Value, CfgYayoBuddy_Vayne.AutoPotions.Chrystalline_Flask_Value, CfgYayoBuddy_Vayne.AutoPotions.Elixir_of_Fortitude_Value, CfgYayoBuddy_Vayne.AutoPotions.Mana_Potion_Value) end
 		if target ~= nil and CfgYayoBuddy_Vayne.SpellOptions.Vayne_AutoCondemn then
@@ -3167,6 +3499,14 @@ YayoBuddy.Veigar = {
 
 -------------------GLOBAL FUNCTIONS
 
+function isAutoAttack(unit,spell)
+	if unit and spell and unit.charName ~= myHero.charName and IsHero(unit) and StringContains(spell.name, "attack") then
+		return true
+	else
+		return false
+	end
+end
+
 function smartBOTRK(target)
 	if target == nil or GetInventorySlot(3153) == nil then 
 		return false 
@@ -3404,6 +3744,8 @@ end
 function getMenu()
 	if myHero.name == "Ahri" then
 		return CfgYayoBuddy_Ahri
+	elseif myHero.name == "Annie" then
+		return CfgYayoBuddy_Annie
 	elseif myHero.name == "Caitlyn" then
 		return CfgYayoBuddy_Caitlyn
 	elseif myHero.name == "Cassiopeia" then
@@ -3455,6 +3797,15 @@ function autoPotions(healthval, flaskval, elixirval, manaval)
 		end
 	end
 	if os.clock() < timerBP + 5000 then bluePill = nil end
+end
+
+function OnCreateObj(object)
+	if (GetDistance(myHero, object)) < 100 then
+		if string.find(object.charName,"FountainHeal") then
+			timer=os.clock()
+			bluePill = object
+		end
+	end
 end
 --[[ NOT NEEDED - SPELL DMG LIBRARY CALCS THIS FOR WDMG
 function getSilverBoltDmg(unit)
